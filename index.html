@@ -1,0 +1,424 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FightUY - Elecciones a Puño Limpio</title>
+    <!-- CSS Estilos -->
+    <link rel="stylesheet" href="/src/style.css" />
+    <!-- Google Fonts: Outfit for UI, Orbitron for arcade fight elements -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+  </head>
+  <body>
+    <!-- Debug Log Overlay para detectar errores de carga de archivos -->
+    <div id="debug-log" style="position: absolute; top: 10px; left: 50%; transform: translateX(-50%); z-index: 10000; background: rgba(0,0,0,0.85); color: #ff3333; font-family: monospace; font-size: 13px; padding: 12px 20px; border-radius: 8px; border: 1px solid #ff3333; pointer-events: auto; max-height: 80vh; overflow-y: auto; max-width: 90%; display: none; text-align: left; box-shadow: 0 5px 15px rgba(0,0,0,0.5);"></div>
+    <script>
+      (function() {
+        const debugBox = document.getElementById('debug-log');
+        
+        function showDebug(msg, type = 'error') {
+          if (!debugBox) return;
+          if (type === 'error') {
+            debugBox.style.display = 'block';
+          }
+          const color = type === 'error' ? '#ff3333' : (type === 'warn' ? '#ffaa00' : '#33ff33');
+          
+          const time = new Date().toLocaleTimeString();
+          const line = document.createElement('div');
+          line.style.marginBottom = '6px';
+          line.style.borderBottom = '1px dashed rgba(255,255,255,0.1)';
+          line.style.paddingBottom = '4px';
+          line.style.color = color;
+          line.textContent = `[${time}] ${msg}`;
+          debugBox.appendChild(line);
+          debugBox.scrollTop = debugBox.scrollHeight;
+        }
+
+        window.onerror = function(message, source, lineno, colno, error) {
+          const file = source ? source.split('/').pop() : 'unknown';
+          showDebug(`EXCEPTION: ${message} (en ${file}:${lineno}:${colno})`, 'error');
+          if (error && error.stack) {
+            showDebug(`STACK: ${error.stack.split('\n').slice(0, 3).join(' | ')}`, 'error');
+          }
+          return false;
+        };
+
+        window.onunhandledrejection = function(event) {
+          showDebug(`REJECTION: ${event.reason}`, 'error');
+        };
+
+        // Interceptar console.error y console.warn
+        const originalError = console.error;
+        console.error = function(...args) {
+          originalError.apply(console, args);
+          showDebug(args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' '), 'error');
+        };
+
+        const originalWarn = console.warn;
+        console.warn = function(...args) {
+          originalWarn.apply(console, args);
+          showDebug(args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' '), 'warn');
+        };
+
+        const originalLog = console.log;
+        console.log = function(...args) {
+          originalLog.apply(console, args);
+          showDebug(args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' '), 'info');
+        };
+
+        // También registrar el progreso de carga principal
+        showDebug("Diagnósticos inicializados...", "info");
+      })();
+    </script>
+
+
+
+    <!-- 3D WebGL Canvas Container -->
+    <div id="game-container"></div>
+
+    <!-- UI Overlay Layer -->
+    <div id="ui-container">
+      <!-- SCREEN FLASH OVERLAY FOR IMPACTS -->
+      <div id="screen-flash"></div>
+      
+      <!-- SCREEN 0: AUTH -->
+      <div id="screen-auth" class="ui-screen active">
+        <div class="auth-panel glass-card">
+          <div class="auth-header">
+            <div class="flag-stripe stripe-blue"></div>
+            <div class="flag-stripe stripe-white"></div>
+            <h1 class="auth-title">FIGHT<span>UY</span></h1>
+            <p class="auth-subtitle">Crea tu usuario para entrar al combate</p>
+          </div>
+
+          <div class="auth-tabs">
+            <button id="btn-auth-login-tab" class="auth-tab active" type="button">Entrar</button>
+            <button id="btn-auth-register-tab" class="auth-tab" type="button">Registrarse</button>
+          </div>
+
+          <form id="auth-form" class="auth-form">
+            <label class="auth-field" id="auth-username-field">
+              <span>Usuario</span>
+              <input id="auth-username" type="text" autocomplete="nickname" maxlength="24" placeholder="Tu nombre de jugador">
+            </label>
+            <label class="auth-field">
+              <span>Email</span>
+              <input id="auth-email" type="email" autocomplete="email" required placeholder="jugador@email.com">
+            </label>
+            <label class="auth-field">
+              <span>Contraseña</span>
+              <input id="auth-password" type="password" autocomplete="current-password" required minlength="6" placeholder="Mínimo 6 caracteres">
+            </label>
+
+            <p id="auth-message" class="auth-message"></p>
+            <button id="btn-auth-submit" class="btn-ui primary auth-submit" type="submit">ENTRAR</button>
+          </form>
+
+          <p id="auth-dev-note" class="auth-dev-note">
+            Modo local: faltan las claves de Supabase. El registro se guarda solo en este navegador.
+          </p>
+        </div>
+      </div>
+
+      <!-- SCREEN 1: MAIN MENU -->
+      <div id="screen-main-menu" class="ui-screen">
+        <div class="menu-header">
+          <div class="flag-stripe stripe-blue"></div>
+          <div class="flag-stripe stripe-white"></div>
+          <h1 class="game-title">FIGHT<span>UY</span></h1>
+          <p class="game-subtitle">Elecciones a Puño Limpio</p>
+        </div>
+        
+        <div class="account-strip">
+          <span id="account-name">Jugador</span>
+          <button id="btn-logout" class="btn-account" type="button">SALIR</button>
+        </div>
+
+        <div class="menu-options">
+          <button id="btn-story" class="btn-menu primary-glow">MODO HISTORIA</button>
+          <button id="btn-vs-cpu" class="btn-menu">VERSUS vs CPU</button>
+          <button id="btn-vs-p2" class="btn-menu">VERSUS vs P2</button>
+          <button id="btn-practice" class="btn-menu">ENTRENAMIENTO</button>
+          <button id="btn-options" class="btn-menu">OPCIONES</button>
+          <button id="btn-credits" class="btn-menu">CRÉDITOS</button>
+        </div>
+        
+        <div class="menu-footer">
+          <p>Uruguay © 2026 - Yamandú vs Lacalle. Presione barra espaciadora para navegar.</p>
+        </div>
+      </div>
+
+      <!-- SCREEN: LOADING SCREEN -->
+      <div id="screen-loading" class="ui-screen">
+        <div class="loading-container glass-card">
+          <div class="loading-spinner"></div>
+          <h2 class="loading-title">CEBANDO COMBATE...</h2>
+          <p class="loading-subtitle">Cargando... 0%</p>
+          <div class="loading-progress-bar"><div class="loading-progress-fill"></div></div>
+        </div>
+      </div>
+
+      <!-- SCREEN 2: CHARACTER SELECT -->
+      <div id="screen-char-select" class="ui-screen">
+        <h2 class="screen-title">SELECCIONA TU CANDIDATO</h2>
+        
+        <div class="selection-container">
+          <!-- Character 1 Card: Yamandú -->
+          <div class="char-card" id="card-orsi" data-char="orsi">
+            <div class="char-banner banner-orsi">FA</div>
+            <div class="char-portrait">
+              <img src="/assets/images/orsi.png" alt="Yamandú Orsi">
+            </div>
+            <h3 class="char-name">Yamandú Orsi</h3>
+            <p class="char-slogan">"Por la fuerza del campo y el mate cebado"</p>
+            <div class="char-stats">
+              <div class="stat-row"><span class="stat-name">Fuerza:</span><div class="stat-bar"><div class="stat-fill" style="width: 80%"></div></div></div>
+              <div class="stat-row"><span class="stat-name">Velocidad:</span><div class="stat-bar"><div class="stat-fill" style="width: 65%"></div></div></div>
+              <div class="stat-row"><span class="stat-name">Mate-Power:</span><div class="stat-bar"><div class="stat-fill" style="width: 95%"></div></div></div>
+            </div>
+            <div class="char-description">
+              Ex-intendente de Canelones y actual presidente. Pelea con su termo de cuero y un termo-chorro de agua hirviendo.
+            </div>
+          </div>
+
+          <!-- Character 2 Card: Lacalle Pou -->
+          <div class="char-card" id="card-lacalle" data-char="lacalle">
+            <div class="char-banner banner-lacalle">PN</div>
+            <div class="char-portrait">
+              <img src="/assets/images/lacalle.png" alt="Luis Lacalle Pou">
+            </div>
+            <h3 class="char-name">Luis Lacalle Pou</h3>
+            <p class="char-slogan">"La Tahona se defiende en la ola"</p>
+            <div class="char-stats">
+              <div class="stat-row"><span class="stat-name">Fuerza:</span><div class="stat-bar"><div class="stat-fill" style="width: 70%"></div></div></div>
+              <div class="stat-row"><span class="stat-name">Velocidad:</span><div class="stat-bar"><div class="stat-fill" style="width: 90%"></div></div></div>
+              <div class="stat-row"><span class="stat-name">Mate-Power:</span><div class="stat-bar"><div class="stat-fill" style="width: 60%"></div></div></div>
+            </div>
+            <div class="char-description">
+              Ex-presidente y surfista profesional. Pelea usando su agilidad física, combos de flexiones de brazo y golpes de tabla.
+            </div>
+          </div>
+        </div>
+
+        <div class="selection-footer">
+          <div class="stage-selector-container">
+            <label for="select-stage">ESCENARIO:</label>
+            <select id="select-stage">
+              <option value="torre" selected>Frente a Torre Ejecutiva (Plaza Independencia)</option>
+              <option value="rambla">La Rambla de Montevideo (Atardecer)</option>
+              <option value="plaza">Plaza Independencia (Noche de Luces)</option>
+              <option value="estadio">Estadio Centenario (Bajo los Focos)</option>
+            </select>
+          </div>
+          
+          <div class="selection-buttons">
+            <button id="btn-char-back" class="btn-ui secondary">VOLVER</button>
+            <button id="btn-char-start" class="btn-ui primary" disabled>¡PELEAR!</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- SCREEN 3: STORY MODE DIALOGUES -->
+      <div id="screen-story" class="ui-screen">
+        <div class="story-overlay-bg"></div>
+        <div class="story-layout">
+          <!-- Character Portraits (Left & Right) -->
+          <div class="story-portraits">
+            <div class="story-portrait-left active" id="story-speaker-left">
+              <div class="story-avatar-img">
+                <img src="/assets/images/orsi.png" alt="Yamandú Orsi">
+              </div>
+              <div class="story-name-tag font-orsi">Yamandú</div>
+            </div>
+            <div class="story-portrait-right" id="story-speaker-right">
+              <div class="story-avatar-img">
+                <img src="/assets/images/lacalle.png" alt="Luis Lacalle Pou">
+              </div>
+              <div class="story-name-tag font-lacalle">Luis</div>
+            </div>
+          </div>
+          
+          <!-- Dialogue Box -->
+          <div class="dialogue-box">
+            <div class="dialogue-header">
+              <span id="dialogue-speaker-name">Yamandú Orsi</span>
+              <button id="btn-skip-story" class="btn-skip">OMITIR</button>
+            </div>
+            <div class="dialogue-text-container">
+              <p id="dialogue-text">Bo, Luis... te dije que el termo se lleva abajo del brazo izquierdo, no podés andar con esa postura che...</p>
+            </div>
+            <div class="dialogue-footer">
+              <span class="dialogue-hint">Presiona ESPACIO para continuar</span>
+              <button id="btn-next-dialogue" class="btn-next">SIGUIENTE ▶</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SCREEN 4: IN-GAME HUD (Gameplay Interface) -->
+      <div id="hud" class="ui-screen-hud">
+        <div class="hud-player hud-p1">
+          <div class="player-info">
+            <div class="player-portrait-mini" id="hud-p1-portrait">
+              <img src="/assets/images/orsi.png" alt="P1">
+            </div>
+            <div class="player-meta">
+              <span class="hud-player-name" id="hud-p1-name">Yamandú Orsi</span>
+              <span class="hud-combo-counter" id="hud-p1-combo"></span>
+            </div>
+          </div>
+          <div class="hud-bars">
+            <div class="hud-health-container">
+              <div class="hud-health-fill" id="hud-p1-health" style="width: 100%"></div>
+              <div class="hud-health-damage" id="hud-p1-health-damage" style="width: 100%"></div>
+            </div>
+            <div class="hud-special-container">
+              <div class="hud-special-fill" id="hud-p1-special" style="width: 0%"></div>
+              <div class="hud-special-text">MATE SPECIAL</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="hud-timer">
+          <div class="hud-timer-circle">
+            <span id="hud-timer-value">99</span>
+          </div>
+          <div class="hud-round-indicator">ROUND <span id="hud-round-number">1</span></div>
+        </div>
+
+        <div class="hud-player hud-p2">
+          <div class="player-info">
+            <div class="player-meta">
+              <span class="hud-player-name" id="hud-p2-name">Luis Lacalle Pou</span>
+              <span class="hud-combo-counter" id="hud-p2-combo"></span>
+            </div>
+            <div class="player-portrait-mini" id="hud-p2-portrait">
+              <img src="/assets/images/lacalle.png" alt="P2">
+            </div>
+          </div>
+
+          <div class="hud-bars">
+            <div class="hud-health-container">
+              <div class="hud-health-fill" id="hud-p2-health" style="width: 100%"></div>
+              <div class="hud-health-damage" id="hud-p2-health-damage" style="width: 100%"></div>
+            </div>
+            <div class="hud-special-container">
+              <div class="hud-special-fill" id="hud-p2-special" style="width: 0%"></div>
+              <div class="hud-special-text">SURF SPECIAL</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SCREEN 5: ROUND MESSAGES (Fight, Round 1, KO) -->
+      <div id="screen-announcer" class="ui-screen-announcer">
+        <h1 id="announcer-text" class="announcer-text-anim">ROUND 1</h1>
+      </div>
+
+      <!-- SCREEN 6: GAME OVER / ROUND END -->
+      <div id="screen-gameover" class="ui-screen">
+        <div class="gameover-container glass-card">
+          <h2 id="gameover-title" class="victory-title">VICTORIA</h2>
+          <p id="gameover-message" class="victory-message">Yamandú Orsi gana la presidencia</p>
+          
+          <div class="fight-stats">
+            <div class="stat-item"><span>Daño Total:</span><span id="stat-damage">420</span></div>
+            <div class="stat-item"><span>Tiempo Restante:</span><span id="stat-time">45s</span></div>
+            <div class="stat-item"><span>Max Combo:</span><span id="stat-combo">5 Golpes</span></div>
+          </div>
+
+          <div class="gameover-buttons">
+            <button id="btn-restart" class="btn-ui primary">REINTENTAR</button>
+            <button id="btn-menu-back" class="btn-ui secondary">MENÚ PRINCIPAL</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- SCREEN 7: OPTIONS MENU -->
+      <div id="screen-options" class="ui-screen">
+        <div class="options-container glass-card">
+          <h2 class="options-title">AJUSTES DE COMBATE</h2>
+          
+          <div class="option-row">
+            <label for="options-difficulty">DIFICULTAD IA:</label>
+            <div class="difficulty-selector">
+              <button class="btn-diff active" data-diff="easy">FÁCIL</button>
+              <button class="btn-diff" data-diff="medium">MEDIO</button>
+              <button class="btn-diff" data-diff="hard">DIFÍCIL</button>
+            </div>
+          </div>
+
+          <div class="option-row">
+            <label for="options-audio">VOLUMEN AUDIOS (ELEVENLABS):</label>
+            <input type="range" id="options-audio" min="0" max="100" value="80" class="slider-ui">
+          </div>
+
+          <div class="controls-guide">
+            <h3>CONTROLES DEL TECLADO</h3>
+            <div class="controls-columns">
+              <div class="control-col">
+                <h4>JUGADOR 1 (Candidato)</h4>
+                <ul>
+                  <li><strong>A / D</strong>: Moverse Izq / Der</li>
+                  <li><strong>W</strong>: Saltar</li>
+                  <li><strong>S</strong>: Bloquear ataque</li>
+                  <li><strong>F</strong>: Puñetazo rápido</li>
+                  <li><strong>G</strong>: Patada fuerte</li>
+                  <li><strong>V</strong>: ¡ATAQUE ESPECIAL!</li>
+                </ul>
+              </div>
+              <div class="control-col">
+                <h4>JUGADOR 2 / CPU</h4>
+                <ul>
+                  <li><strong>◄ / ►</strong>: Moverse Izq / Der</li>
+                  <li><strong>▲</strong>: Saltar</li>
+                  <li><strong>▼</strong>: Bloquear ataque</li>
+                  <li><strong>J</strong>: Puñetazo rápido</li>
+                  <li><strong>K</strong>: Patada fuerte</li>
+                  <li><strong>N</strong>: ¡ATAQUE ESPECIAL!</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <button id="btn-options-close" class="btn-ui primary">GUARDAR Y SALIR</button>
+        </div>
+      </div>
+
+      <!-- SCREEN 8: CREDITS -->
+      <div id="screen-credits" class="ui-screen">
+        <div class="credits-container glass-card">
+          <h2 class="credits-title">CREDITOS</h2>
+          <p class="credits-intro">Un tributo satírico de pelea sobre la política uruguaya.</p>
+          
+          <div class="credits-list">
+            <div class="credit-section">
+              <h4>Idea Original & Desarrollo</h4>
+              <p>FightUY Team</p>
+            </div>
+            <div class="credit-section">
+              <h4>Modelado 3D & Animaciones</h4>
+              <p>Próximamente archivos GLB del usuario</p>
+            </div>
+            <div class="credit-section">
+              <h4>Efectos de Voz</h4>
+              <p>ElevenLabs AI voices (Yamandú & Luis)</p>
+            </div>
+            <div class="credit-section">
+              <h4>Inspiración</h4>
+              <p>La Rambla, Plaza Independencia, Estadio Centenario, la pasión uruguaya y el buen mate.</p>
+            </div>
+          </div>
+
+          <button id="btn-credits-close" class="btn-ui primary">VOLVER</button>
+        </div>
+      </div>
+
+    </div>
+    
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
