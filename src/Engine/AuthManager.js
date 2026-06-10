@@ -12,6 +12,7 @@ class AuthManager {
     this.profile = null;
     this.entitlements = new Set();
     this.localUser = null;
+    this.ownerDashboard = null;
   }
 
   async init() {
@@ -50,6 +51,11 @@ class AuthManager {
   getDisplayName() {
     if (!this.enabled) return this.localUser?.username || 'Jugador local';
     return this.profile?.username || this.session?.user?.email || 'Jugador';
+  }
+
+  isOwner() {
+    if (!this.enabled) return true;
+    return this.profile?.role === 'owner';
   }
 
   async signUp({ email, password, username }) {
@@ -137,7 +143,7 @@ class AuthManager {
     await this.ensureProfile(user);
 
     const [{ data: profile }, { data: entitlements }] = await Promise.all([
-      this.supabase.from('profiles').select('id, username, email').eq('id', user.id).single(),
+      this.supabase.from('profiles').select('id, username, email, role').eq('id', user.id).single(),
       this.supabase.from('character_entitlements').select('character_id').eq('user_id', user.id)
     ]);
 
@@ -149,6 +155,78 @@ class AuthManager {
     if (FREE_CHARACTERS.has(characterId)) return true;
     if (!this.enabled) return false;
     return this.entitlements.has(characterId);
+  }
+
+  async trackEvent(eventName, metadata = {}) {
+    if (!this.enabled || !this.session?.user) return;
+
+    await this.supabase.from('app_events').insert({
+      user_id: this.session.user.id,
+      event_name: eventName,
+      metadata
+    });
+  }
+
+  async getOwnerDashboard() {
+    if (!this.enabled) {
+      return {
+        totals: {
+          users: 1,
+          paying_users: 0,
+          payments: 0,
+          revenue_cents: 0,
+          events_24h: 0
+        },
+        recent_users: this.localUser ? [this.localUser] : [],
+        recent_events: [],
+        purchases_by_character: []
+      };
+    }
+
+    if (!this.isOwner()) throw new Error('No tenés permisos de dueño para ver este panel.');
+
+    const { data, error } = await this.supabase.rpc('get_owner_dashboard');
+    if (error) throw error;
+
+    this.ownerDashboard = data;
+    return data;
+  }
+
+  async getPlayerProfile() {
+    if (!this.enabled) {
+      return {
+        profile: this.localUser ? {
+          username: this.localUser.username,
+          email: this.localUser.email,
+          role: 'local'
+        } : null,
+        free_characters: Array.from(FREE_CHARACTERS),
+        entitlements: [],
+        payments: [],
+        recent_events: []
+      };
+    }
+
+    if (!this.session?.user) throw new Error('Tenés que iniciar sesión.');
+
+    const userId = this.session.user.id;
+    const [{ data: profile, error: profileError }, { data: entitlements, error: entitlementsError }, { data: payments, error: paymentsError }, { data: events, error: eventsError }] = await Promise.all([
+      this.supabase.from('profiles').select('id, username, email, role, created_at').eq('id', userId).single(),
+      this.supabase.from('character_entitlements').select('character_id, source, created_at').eq('user_id', userId).order('created_at', { ascending: false }),
+      this.supabase.from('payments').select('product_type, product_id, amount_cents, currency, status, created_at').eq('user_id', userId).order('created_at', { ascending: false }).limit(12),
+      this.supabase.from('app_events').select('event_name, metadata, created_at').eq('user_id', userId).order('created_at', { ascending: false }).limit(12)
+    ]);
+
+    const error = profileError || entitlementsError || paymentsError || eventsError;
+    if (error) throw error;
+
+    return {
+      profile,
+      free_characters: Array.from(FREE_CHARACTERS),
+      entitlements: entitlements || [],
+      payments: payments || [],
+      recent_events: events || []
+    };
   }
 }
 

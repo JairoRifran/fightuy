@@ -15,6 +15,8 @@ class UIManager {
     this.screens = {
       auth: document.getElementById('screen-auth'),
       menu: document.getElementById('screen-main-menu'),
+      profile: document.getElementById('screen-profile'),
+      ownerPanel: document.getElementById('screen-owner-panel'),
       charSelect: document.getElementById('screen-char-select'),
       story: document.getElementById('screen-story'),
       gameover: document.getElementById('screen-gameover'),
@@ -44,6 +46,154 @@ class UIManager {
     if (devNote) {
       devNote.style.display = isSupabaseEnabled ? 'none' : 'block';
     }
+  }
+
+  setOwnerControlsVisible(isVisible) {
+    const ownerBtn = document.getElementById('btn-owner-panel');
+    if (ownerBtn) ownerBtn.style.display = isVisible ? 'block' : 'none';
+  }
+
+  setProfileMessage(message, type = 'info') {
+    const messageEl = document.getElementById('profile-message');
+    if (!messageEl) return;
+
+    messageEl.textContent = message;
+    messageEl.dataset.type = type;
+  }
+
+  renderPlayerProfile(data) {
+    const profile = data?.profile || {};
+    const freeCharacters = data?.free_characters || [];
+    const entitlements = data?.entitlements || [];
+    const payments = data?.payments || [];
+    const events = data?.recent_events || [];
+    const allCharacters = [
+      ...freeCharacters.map(characterId => ({ character_id: characterId, source: 'gratis' })),
+      ...entitlements
+    ];
+
+    const setText = (id, value) => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = value;
+    };
+
+    setText('profile-username', profile.username || profile.email || 'Jugador');
+    setText('profile-email', profile.email || 'sin email');
+    setText('profile-role', profile.role || 'player');
+    setText('profile-character-count', allCharacters.length);
+    setText('profile-payment-count', payments.length);
+
+    this.renderProfileList('profile-characters-list', allCharacters, (item) => `
+      <div class="profile-list-main">${this.escapeHtml(this.getCharacterName(item.character_id))}</div>
+      <div class="profile-list-meta">${this.escapeHtml(item.source || 'desbloqueado')} ${item.created_at ? `· ${this.formatDate(item.created_at)}` : ''}</div>
+    `);
+
+    this.renderProfileList('profile-payments-list', payments, (payment) => `
+      <div class="profile-list-main">${this.escapeHtml(payment.product_id || payment.product_type || 'compra')}</div>
+      <div class="profile-list-meta">${this.formatMoney(payment.amount_cents || 0)} · ${this.escapeHtml(payment.status || 'estado')} · ${this.formatDate(payment.created_at)}</div>
+    `);
+
+    this.renderProfileList('profile-events-list', events, (event) => `
+      <div class="profile-list-main">${this.escapeHtml(event.event_name || 'evento')}</div>
+      <div class="profile-list-meta">${this.formatDate(event.created_at)}</div>
+    `);
+  }
+
+  renderProfileList(containerId, items, renderItem) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    if (!items.length) {
+      container.innerHTML = '<div class="profile-empty">Sin datos todavía.</div>';
+      return;
+    }
+
+    container.innerHTML = items.map(item => `<div class="profile-list-item">${renderItem(item)}</div>`).join('');
+  }
+
+  getCharacterName(characterId) {
+    const names = {
+      orsi: 'Yamandú Orsi',
+      lacalle: 'Luis Lacalle Pou'
+    };
+
+    return names[characterId] || characterId || 'Personaje';
+  }
+
+  setOwnerMessage(message, type = 'info') {
+    const messageEl = document.getElementById('owner-message');
+    if (!messageEl) return;
+
+    messageEl.textContent = message;
+    messageEl.dataset.type = type;
+  }
+
+  renderOwnerDashboard(data) {
+    const totals = data?.totals || {};
+    const setText = (id, value) => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = value;
+    };
+
+    setText('owner-total-users', totals.users || 0);
+    setText('owner-paying-users', totals.paying_users || 0);
+    setText('owner-total-payments', totals.payments || 0);
+    setText('owner-total-revenue', this.formatMoney(totals.revenue_cents || 0));
+    setText('owner-events-24h', totals.events_24h || 0);
+
+    this.renderOwnerList('owner-users-list', data?.recent_users || [], (user) => `
+      <div class="owner-list-main">${this.escapeHtml(user.username || user.email || 'Usuario')}</div>
+      <div class="owner-list-meta">${this.escapeHtml(user.email || 'sin email')} · ${this.formatDate(user.created_at)}</div>
+    `);
+
+    this.renderOwnerList('owner-events-list', data?.recent_events || [], (event) => `
+      <div class="owner-list-main">${this.escapeHtml(event.event_name || 'evento')}</div>
+      <div class="owner-list-meta">${this.escapeHtml(event.username || event.email || 'usuario')} · ${this.formatDate(event.created_at)}</div>
+    `);
+
+    this.renderOwnerList('owner-purchases-list', data?.purchases_by_character || [], (purchase) => `
+      <div class="owner-list-main">${this.escapeHtml(purchase.character_id || 'personaje')}</div>
+      <div class="owner-list-meta">${purchase.sales || 0} ventas · ${this.formatMoney(purchase.revenue_cents || 0)}</div>
+    `);
+  }
+
+  renderOwnerList(containerId, items, renderItem) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    if (!items.length) {
+      container.innerHTML = '<div class="owner-empty">Sin datos todavía.</div>';
+      return;
+    }
+
+    container.innerHTML = items.map(item => `<div class="owner-list-item">${renderItem(item)}</div>`).join('');
+  }
+
+  formatMoney(cents) {
+    return new Intl.NumberFormat('es-UY', {
+      style: 'currency',
+      currency: 'USD'
+    }).format((cents || 0) / 100);
+  }
+
+  formatDate(value) {
+    if (!value) return 'sin fecha';
+
+    return new Intl.DateTimeFormat('es-UY', {
+      day: '2-digit',
+      month: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit'
+    }).format(new Date(value));
+  }
+
+  escapeHtml(value) {
+    return String(value)
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;')
+      .replaceAll("'", '&#039;');
   }
 
   setAuthMode(mode) {

@@ -122,8 +122,10 @@ class GameApp {
     try {
       const user = await AuthManager.init();
       UIManager.updateAccount(AuthManager.getDisplayName(), AuthManager.enabled);
+      UIManager.setOwnerControlsVisible(AuthManager.isOwner());
 
       if (user) {
+        await AuthManager.trackEvent('session_restored');
         UIManager.showScreen('menu');
       }
     } catch (error) {
@@ -169,6 +171,8 @@ class GameApp {
         }
 
         UIManager.updateAccount(AuthManager.getDisplayName(), AuthManager.enabled);
+        UIManager.setOwnerControlsVisible(AuthManager.isOwner());
+        await AuthManager.trackEvent(UIManager.authMode === 'register' ? 'signup' : 'login');
         UIManager.showScreen('menu');
       } catch (error) {
         UIManager.setAuthMessage(this.getAuthErrorMessage(error), 'error');
@@ -179,6 +183,7 @@ class GameApp {
 
     logoutBtn?.addEventListener('click', async () => {
       await AuthManager.signOut();
+      UIManager.setOwnerControlsVisible(false);
       UIManager.showScreen('auth');
       UIManager.setAuthMode('login');
     });
@@ -195,28 +200,96 @@ class GameApp {
     return message;
   }
 
+  async openOwnerPanel() {
+    if (!AuthManager.isOwner()) {
+      UIManager.setAuthMessage('Este panel es solo para el dueño del producto.', 'error');
+      return;
+    }
+
+    UIManager.showScreen('ownerPanel');
+    await this.loadOwnerDashboard();
+  }
+
+  async loadOwnerDashboard() {
+    UIManager.setOwnerMessage('Cargando datos...');
+
+    try {
+      const dashboard = await AuthManager.getOwnerDashboard();
+      UIManager.renderOwnerDashboard(dashboard);
+      UIManager.setOwnerMessage('Datos actualizados.', 'success');
+    } catch (error) {
+      UIManager.setOwnerMessage(this.getAuthErrorMessage(error), 'error');
+    }
+  }
+
+  async openPlayerProfile() {
+    UIManager.showScreen('profile');
+    await this.loadPlayerProfile();
+  }
+
+  async loadPlayerProfile() {
+    UIManager.setProfileMessage('Cargando perfil...');
+
+    try {
+      const profile = await AuthManager.getPlayerProfile();
+      UIManager.renderPlayerProfile(profile);
+      UIManager.setProfileMessage('Perfil actualizado.', 'success');
+      AuthManager.trackEvent('profile_opened');
+    } catch (error) {
+      UIManager.setProfileMessage(this.getAuthErrorMessage(error), 'error');
+    }
+  }
+
   bindUIEvents() {
     this.bindAuthEvents();
 
     // Botones del menú principal
     document.getElementById('btn-story').addEventListener('click', () => {
       this.gameMode = 'story';
+      AuthManager.trackEvent('mode_selected', { mode: this.gameMode });
       UIManager.showScreen('charSelect');
     });
 
     document.getElementById('btn-vs-cpu').addEventListener('click', () => {
       this.gameMode = 'vs-cpu';
+      AuthManager.trackEvent('mode_selected', { mode: this.gameMode });
       UIManager.showScreen('charSelect');
     });
 
     document.getElementById('btn-vs-p2').addEventListener('click', () => {
       this.gameMode = 'vs-p2';
+      AuthManager.trackEvent('mode_selected', { mode: this.gameMode });
       UIManager.showScreen('charSelect');
     });
 
     document.getElementById('btn-practice').addEventListener('click', () => {
       this.gameMode = 'practice';
+      AuthManager.trackEvent('mode_selected', { mode: this.gameMode });
       UIManager.showScreen('charSelect');
+    });
+
+    document.getElementById('btn-profile').addEventListener('click', () => {
+      this.openPlayerProfile();
+    });
+
+    document.getElementById('btn-profile-refresh').addEventListener('click', () => {
+      this.loadPlayerProfile();
+    });
+
+    document.getElementById('btn-profile-back').addEventListener('click', () => {
+      UIManager.showScreen('menu');
+    });
+
+    document.getElementById('btn-owner-panel').addEventListener('click', () => {
+      this.openOwnerPanel();
+    });
+
+    document.getElementById('btn-owner-refresh').addEventListener('click', () => {
+      this.loadOwnerDashboard();
+    });
+
+    document.getElementById('btn-owner-back').addEventListener('click', () => {
+      UIManager.showScreen('menu');
     });
 
     document.getElementById('btn-options').addEventListener('click', () => {
@@ -302,6 +375,7 @@ class GameApp {
     }
 
     UIManager.selectCharacter(characterId);
+    AuthManager.trackEvent('character_selected', { character_id: characterId });
   }
 
   // Prepara los peleadores y el escenario seleccionado
@@ -314,6 +388,13 @@ class GameApp {
     // Determinar personajes
     const char1 = UIManager.selectedChar; // Seleccionado por el usuario
     const char2 = char1 === 'orsi' ? 'lacalle' : 'orsi'; // CPU / P2 toma el oponente
+
+    AuthManager.trackEvent('match_started', {
+      mode: this.gameMode,
+      stage: this.activeStage,
+      player_character: char1,
+      opponent_character: this.gameMode === 'practice' ? null : char2
+    });
 
     // Mostrar pantalla de carga e iniciar fase de carga
     UIManager.showScreen('loading');
@@ -991,6 +1072,18 @@ class GameApp {
 
       const winnerName = winnerFighter ? 
         (winnerFighter.characterType === 'orsi' ? 'Yamandú Orsi' : 'Luis Lacalle Pou') : 'Ninguno';
+
+      AuthManager.trackEvent('match_finished', {
+        mode: this.gameMode,
+        stage: this.activeStage,
+        winner: winnerFighter?.characterType || null,
+        player_character: this.player1?.characterType || null,
+        opponent_character: this.player2?.characterType || null,
+        p1_rounds: this.p1RoundWins,
+        p2_rounds: this.p2RoundWins,
+        damage: Math.floor(this.stats.damage),
+        max_combo: this.stats.maxCombo
+      });
 
       setTimeout(() => {
         UIManager.showGameOver(winnerName, msg, this.stats);

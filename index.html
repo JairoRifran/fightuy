@@ -142,12 +142,127 @@
           <button id="btn-vs-cpu" class="btn-menu">VERSUS vs CPU</button>
           <button id="btn-vs-p2" class="btn-menu">VERSUS vs P2</button>
           <button id="btn-practice" class="btn-menu">ENTRENAMIENTO</button>
+          <button id="btn-profile" class="btn-menu">MI PERFIL</button>
+          <button id="btn-owner-panel" class="btn-menu owner-only">PANEL DUEÑO</button>
           <button id="btn-options" class="btn-menu">OPCIONES</button>
           <button id="btn-credits" class="btn-menu">CRÉDITOS</button>
         </div>
         
         <div class="menu-footer">
           <p>Uruguay © 2026 - Yamandú vs Lacalle. Presione barra espaciadora para navegar.</p>
+        </div>
+      </div>
+
+      <!-- SCREEN: PLAYER PROFILE -->
+      <div id="screen-profile" class="ui-screen">
+        <div class="profile-panel">
+          <div class="profile-header">
+            <div>
+              <h2 class="profile-title">Mi perfil</h2>
+              <p class="profile-subtitle">Tu cuenta, personajes y actividad</p>
+            </div>
+            <div class="profile-actions">
+              <button id="btn-profile-refresh" class="btn-ui primary" type="button">ACTUALIZAR</button>
+              <button id="btn-profile-back" class="btn-ui secondary" type="button">VOLVER</button>
+            </div>
+          </div>
+
+          <p id="profile-message" class="profile-message"></p>
+
+          <div class="profile-summary">
+            <div class="profile-card profile-card-main">
+              <span>Jugador</span>
+              <strong id="profile-username">Jugador</strong>
+              <small id="profile-email">sin email</small>
+            </div>
+            <div class="profile-card">
+              <span>Rol</span>
+              <strong id="profile-role">player</strong>
+            </div>
+            <div class="profile-card">
+              <span>Personajes</span>
+              <strong id="profile-character-count">0</strong>
+            </div>
+            <div class="profile-card">
+              <span>Compras</span>
+              <strong id="profile-payment-count">0</strong>
+            </div>
+          </div>
+
+          <div class="profile-grid">
+            <section class="profile-section">
+              <h3>Personajes disponibles</h3>
+              <div id="profile-characters-list" class="profile-list"></div>
+            </section>
+
+            <section class="profile-section">
+              <h3>Compras</h3>
+              <div id="profile-payments-list" class="profile-list"></div>
+            </section>
+
+            <section class="profile-section profile-section-wide">
+              <h3>Actividad reciente</h3>
+              <div id="profile-events-list" class="profile-list"></div>
+            </section>
+          </div>
+        </div>
+      </div>
+
+      <!-- SCREEN: OWNER DASHBOARD -->
+      <div id="screen-owner-panel" class="ui-screen">
+        <div class="owner-panel">
+          <div class="owner-header">
+            <div>
+              <h2 class="owner-title">Panel del dueño</h2>
+              <p class="owner-subtitle">Usuarios, actividad y compras del producto</p>
+            </div>
+            <div class="owner-actions">
+              <button id="btn-owner-refresh" class="btn-ui primary" type="button">ACTUALIZAR</button>
+              <button id="btn-owner-back" class="btn-ui secondary" type="button">VOLVER</button>
+            </div>
+          </div>
+
+          <p id="owner-message" class="owner-message"></p>
+
+          <div class="owner-metrics">
+            <div class="owner-metric">
+              <span>Usuarios</span>
+              <strong id="owner-total-users">0</strong>
+            </div>
+            <div class="owner-metric">
+              <span>Pagaron</span>
+              <strong id="owner-paying-users">0</strong>
+            </div>
+            <div class="owner-metric">
+              <span>Pagos</span>
+              <strong id="owner-total-payments">0</strong>
+            </div>
+            <div class="owner-metric">
+              <span>Ingresos</span>
+              <strong id="owner-total-revenue">$0</strong>
+            </div>
+            <div class="owner-metric">
+              <span>Eventos 24h</span>
+              <strong id="owner-events-24h">0</strong>
+            </div>
+          </div>
+
+          <div class="owner-grid">
+            <section class="owner-section">
+              <h3>Usuarios recientes</h3>
+              <div id="owner-users-list" class="owner-list"></div>
+            </section>
+
+            <section class="owner-section">
+              <h3>Actividad reciente</h3>
+              <div id="owner-events-list" class="owner-list"></div>
+            </section>
+
+            <section class="owner-section owner-section-wide">
+              <h3>Compras por personaje</h3>
+              <div id="owner-purchases-list" class="owner-list owner-purchases"></div>
+            </section>
+          </div>
         </div>
       </div>
 
