@@ -162,6 +162,15 @@ class AudioManager {
         this.playTone(620, 170, 0.08, 0.2, 'sine', now);
         break;
 
+      case 'hover':
+        this.playTone(1200, 1000, 0.04, 0.08, 'sine', now);
+        break;
+
+      case 'whoosh':
+        this.playNoiseBurst(0.25, 0.15, 800, 'bandpass', now);
+        this.playTone(320, 80, 0.25, 0.2, 'triangle', now);
+        break;
+
       case 'select':
         this.playTone(360, 760, 0.13, 0.28, 'triangle', now);
         this.playTone(760, 1120, 0.09, 0.16, 'sine', now + 0.07);
@@ -409,7 +418,7 @@ class AudioManager {
     this.currentBGMType = themeType;
     this.bgmActive = true;
 
-    let tempo = themeType === 'combat' ? 120 : 96; // 120 BPM para pelea, 96 BPM para menu
+    let tempo = themeType === 'combat' ? 120 : 112; // 120 BPM para pelea, 112 BPM para menu
     let stepTime = 60 / tempo / 2; // Corcheas (1/8 notes)
     let step = 0;
 
@@ -460,35 +469,50 @@ class AudioManager {
           this.playTone(180, 90, 0.09, 0.08, 'triangle', now);
         }
       } else {
-        // --- Ritmo chill arpegiado caracteristico para menu y navegacion ---
-        // 1. Bajo sine ultra-suave sostenido en el paso 0 de cada compas de 8 steps
-        if (step % 8 === 0) {
-          const noteIdx = Math.floor(step / 8) % bassline.length;
+        // --- Ritmo Épico y con Suspenso/Acción para el menú (112 BPM) ---
+        // 1. Sintetizador de Bajo Sawtooth + Sub Sine rítmico en pasos pares
+        if (step % 2 === 0) {
+          const noteIdx = Math.floor(step / 2) % bassline.length;
           const freq = bassline[noteIdx];
           
-          this.playTone(freq, freq, stepTime * 7.5, 0.22, 'sine', now); // Bajo redondo
-          this.playTone(freq * 2, freq * 2, stepTime * 5.0, 0.08, 'triangle', now); // Calidez media
+          this.playTone(freq, freq * 0.99, stepTime * 1.6, 0.14, 'sawtooth', now);
+          this.playTone(freq / 2, freq / 2, stepTime * 1.4, 0.22, 'sine', now);
         }
 
-        // 2. Arpegiador melodico caracteristico (Pluck synth)
+        // 2. Hi-Hat Rápido (contratiempos)
+        if (step % 2 === 1) {
+          this.playNoiseBurst(0.035, 0.025, 4000, 'highpass', now);
+        }
+
+        // 3. Bombo Épico (Kick)
+        const beat = step % 8;
+        if (beat === 0 || beat === 4) {
+          this.playTone(110, 40, 0.15, 0.3, 'sine', now);
+        }
+
+        // 4. Caja Metálica Tensa (Snare)
+        if (beat === 4) {
+          this.playNoiseBurst(0.1, 0.08, 1200, 'bandpass', now);
+          this.playTone(150, 80, 0.08, 0.06, 'triangle', now);
+        }
+
+        // 5. Arpegiador Dramático de Suspenso (Pluck Triangle)
         const chordNotes = step % 16;
         let melodyFreq = 0;
-        const root = bassline[Math.floor(step / 8) % bassline.length] * 4; // Subir 2 octavas
-        
+        const root = bassline[Math.floor(step / 8) % bassline.length] * 4; // 2 octavas arriba
+
+        // Patrón melódico en escala menor y sexta menor (suspenso)
         if (chordNotes === 0) melodyFreq = root;
-        else if (chordNotes === 2) melodyFreq = root * 1.2;  // Tercera menor
-        else if (chordNotes === 4) melodyFreq = root * 1.5;  // Quinta
-        else if (chordNotes === 6) melodyFreq = root * 1.8;  // Septima/Octava
-        else if (chordNotes === 8) melodyFreq = root * 1.5;
-        else if (chordNotes === 10) melodyFreq = root * 1.2;
+        else if (chordNotes === 2) melodyFreq = root * 1.2;  // 3ra menor
+        else if (chordNotes === 4) melodyFreq = root * 1.5;  // 5ta
+        else if (chordNotes === 6) melodyFreq = root * 1.6;  // 6ta menor (tensión)
+        else if (chordNotes === 8) melodyFreq = root * 1.88; // 7ma menor
+        else if (chordNotes === 10) melodyFreq = root * 1.6;
+        else if (chordNotes === 12) melodyFreq = root * 1.5;
+        else if (chordNotes === 14) melodyFreq = root * 1.2;
 
         if (melodyFreq > 0) {
-          this.playTone(melodyFreq, melodyFreq * 0.98, 0.32, 0.07, 'sine', now);
-        }
-
-        // 3. Hi-Hat sutil e intermitente para marcar el paso
-        if (step % 4 === 2) {
-          this.playNoiseBurst(0.025, 0.016, 4200, 'highpass', now);
+          this.playTone(melodyFreq, melodyFreq * 0.98, 0.28, 0.06, 'triangle', now);
         }
       }
 

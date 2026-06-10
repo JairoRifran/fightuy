@@ -175,7 +175,9 @@ const CHARACTER_CONFIGS = {
         range: 2.52,
         height: 0.95,
         knockback: 5.1,
-        hitStop: 0.096
+        hitStop: 0.096,
+        maxHits: 2,
+        hitInterval: 0.28
       }
     }
   },
@@ -205,7 +207,9 @@ const CHARACTER_CONFIGS = {
         range: 1.78,
         height: 1.1,
         knockback: 3.25,
-        hitStop: 0.076
+        hitStop: 0.076,
+        maxHits: 3,
+        hitInterval: 0.26
       },
       kick: {
         animationKey: 'kick',
@@ -311,6 +315,8 @@ class Fighter {
     // Ataques
     this.isAttacking = false;
     this.hasHitThisAttack = false;
+    this.hitCountThisAttack = 0;
+    this.lastHitTime = 0;
     this.currentAttackDamage = 0;
     this.currentAttackRange = 0;
     this.currentAttackHeight = 0;
@@ -1296,6 +1302,8 @@ class Fighter {
     this.changeState(stateName);
     this.isAttacking = true;
     this.hasHitThisAttack = false;
+    this.hitCountThisAttack = 0;
+    this.lastHitTime = 0;
 
     if (stateName === 'SPECIAL') AudioManager.play('special_charge');
     else if (stateName === 'KICK') AudioManager.play('kick_swing');

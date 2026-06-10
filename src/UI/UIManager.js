@@ -1,4 +1,4 @@
-﻿/* ==========================================================================
+/* ==========================================================================
    FIGHTUY - UI MANAGER
    Maneja la navegaciÃ³n de pantallas y la sincronizaciÃ³n del HUD e interfaz
    ========================================================================== */
@@ -35,6 +35,7 @@ class UIManager {
 
     // Inicializar listeners de las opciones
     this.setupOpcionesUI();
+    this.setupHoverSounds();
   }
 
   updateAccount(userName, isSupabaseEnabled) {
@@ -229,7 +230,7 @@ class UIManager {
   // Cambia la pantalla activa del juego
   showScreen(screenId) {
     // Sonido al cambiar pantalla
-    AudioManager.play('click');
+    AudioManager.play('whoosh');
 
     // Desactivar todas las pantallas principales
     Object.values(this.screens).forEach(screen => {
@@ -259,6 +260,8 @@ class UIManager {
         subtitle.textContent = 'Cargando... 0%';
       }
     }
+
+    this.setupHoverSounds();
   }
 
   // Actualiza el progreso real de la pantalla de carga
@@ -573,6 +576,17 @@ class UIManager {
       // Inicializar
       AudioManager.setVolume(parseInt(volSlider.value) / 100);
     }
+  }
+
+  setupHoverSounds() {
+    const hoverables = document.querySelectorAll('button, input, select, textarea, .char-card, a, .btn-diff');
+    hoverables.forEach(el => {
+      if (el.dataset.hasHoverSound) return;
+      el.dataset.hasHoverSound = 'true';
+      el.addEventListener('mouseenter', () => {
+        AudioManager.play('hover');
+      });
+    });
   }
 
   // Obtiene la dificultad configurada

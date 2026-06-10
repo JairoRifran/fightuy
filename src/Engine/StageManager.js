@@ -567,8 +567,8 @@ class StageManager {
         texture.colorSpace = THREE.SRGBColorSpace;
         texture.wrapS = THREE.RepeatWrapping;
         texture.repeat.set(3, 1);
-        // Plano de fondo gigante alejado para evitar zoom y recortar correctamente (relación 4:3 de la foto)
-        const bgGeo = new THREE.PlaneGeometry(132, 33);
+        // Cilindro curvado de fondo alejado para dar una perspectiva envolvente realista y evitar baches celestes
+        const bgGeo = new THREE.CylinderGeometry(18, 18, 36, 32, 1, true, Math.PI * 0.4, Math.PI * 1.2);
         const bgMat = new THREE.MeshBasicMaterial({ 
           map: texture, 
           side: THREE.DoubleSide,
@@ -577,8 +577,8 @@ class StageManager {
         const bgMesh = new THREE.Mesh(bgGeo, bgMat);
         
         // Y = 4.3 alinea el horizonte de la foto exactamente con el nivel del suelo (Y=0)
-        // Z = -16.0 aleja la foto para dar una perspectiva lejana correcta y realista
-        bgMesh.position.set(0, 4.3, -16.0); 
+        // Centrado en el origen (0, 4.3, 0) para que el cilindro envuelva la escena a una distancia de 18 unidades
+        bgMesh.position.set(0, 4.3, 0); 
         group.add(bgMesh);
         console.log('Fondo de Plaza Independencia cargado con éxito.');
         this.hasLoadedStage = true;
@@ -587,10 +587,10 @@ class StageManager {
       undefined,
       (err) => {
         console.error('Error cargando la textura de fondo:', err);
-        // Fallback: Celeste básico
-        const skyGeo = new THREE.PlaneGeometry(60, 30);
-        const sky = new THREE.Mesh(skyGeo, new THREE.MeshBasicMaterial({ color: 0x81d4fa }));
-        sky.position.set(0, 8, -11);
+        // Fallback: Celeste básico curvo
+        const skyGeo = new THREE.CylinderGeometry(18, 18, 36, 32, 1, true, Math.PI * 0.4, Math.PI * 1.2);
+        const sky = new THREE.Mesh(skyGeo, new THREE.MeshBasicMaterial({ color: 0x81d4fa, side: THREE.DoubleSide }));
+        sky.position.set(0, 4.3, 0);
         group.add(sky);
         this.hasLoadedStage = true;
         if (this.onAssetLoaded) this.onAssetLoaded('stage_torre_bg_fallback');

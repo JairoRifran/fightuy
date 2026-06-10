@@ -73,8 +73,18 @@ class CollisionSystem {
   // Verifica si el ataque de un peleador golpea al oponente
   checkHit(attacker, defender) {
     // Solo puede golpear en frames activos de ataque (golpe, patada, especial)
-    if (!attacker.isAttacking || attacker.hasHitThisAttack) return;
+    if (!attacker.isAttacking) return;
+
+    const maxHits = attacker.currentAttackSpec?.maxHits || 1;
+    if (attacker.hitCountThisAttack >= maxHits) return;
+
     if (attacker.isAttackActive && !attacker.isAttackActive()) return;
+
+    // Si ya golpeó antes en este ataque, verificar el intervalo de tiempo mínimo
+    if (attacker.hitCountThisAttack > 0) {
+      const hitInterval = attacker.currentAttackSpec?.hitInterval || 0.2;
+      if (attacker.stateTimer - attacker.lastHitTime < hitInterval) return;
+    }
 
     // Calcular la posición absoluta del hitbox del atacante
     const attackRange = attacker.currentAttackRange || 1.8;
@@ -97,8 +107,16 @@ class CollisionSystem {
     const hitZ = Math.abs(attacker.position.z - defender.position.z) <= 0.85;
 
     if (hitX && hitY && hitZ) {
-      // Registrar que este ataque ya conectó (para no hacer daño multi-hit por frame)
-      attacker.hasHitThisAttack = true;
+      // Registrar incremento de hit count e interval
+      attacker.hitCountThisAttack++;
+      attacker.lastHitTime = attacker.stateTimer;
+      
+      if (attacker.hitCountThisAttack >= maxHits) {
+        attacker.hasHitThisAttack = true;
+      }
+      
+      const baseDamagePerHit = attacker.currentAttackDamage / maxHits;
+      const isLastHit = (attacker.hitCountThisAttack >= maxHits);
 
       // Calcular si el defensor está bloqueando
       // Para bloquear, el defensor debe estar en el estado BLOCK y estar mirando al atacante
@@ -107,50 +125,57 @@ class CollisionSystem {
 
       if (isBlocking) {
         // Impacto bloqueado: menor daño, menor retroceso, destello azul
-        const damage = attacker.currentAttackDamage * 0.15; // 15% daño
-        defender.takeDamage(damage, attacker.facingDirection * 1.5, true);
+        const damage = baseDamagePerHit * 0.15; // 15% daño
+        const baseKnockback = 1.5;
+        const knockback = isLastHit ? baseKnockback : baseKnockback * 0.18;
+
+        defender.takeDamage(damage, attacker.facingDirection * knockback, true);
         const blockStop = Math.max(0.035, (attacker.currentAttackSpec?.hitStop || 0.05) * 0.7);
-        if (attacker.applyHitStop) attacker.applyHitStop(blockStop);
-        if (defender.applyHitStop) defender.applyHitStop(blockStop + 0.01);
+        const hitStop = isLastHit ? blockStop : blockStop * 0.75;
+        if (attacker.applyHitStop) attacker.applyHitStop(hitStop);
+        if (defender.applyHitStop) defender.applyHitStop(hitStop + 0.01);
         
         // Efecto visual de Bloqueo (Destello azul/blanco)
-        this.spawnSparks(hitboxX, hitboxY, '#00d2ff', 12, 0.85);
+        this.spawnSparks(hitboxX, hitboxY, '#00d2ff', 6, 0.7);
         AudioManager.play('block');
       } else {
         // Impacto pleno
         const comboBeforeHit = attacker.comboCount || 0;
         const comboMultiplier = 1 + Math.min(comboBeforeHit, 7) * 0.08;
-        const damage = attacker.currentAttackDamage * comboMultiplier;
-        const knockback = attacker.currentAttackSpec?.knockback || (attacker.currentState === 'SPECIAL' ? 5.0 : 4.0);
+        const damage = baseDamagePerHit * comboMultiplier;
+        const baseKnockback = attacker.currentAttackSpec?.knockback || (attacker.currentState === 'SPECIAL' ? 5.0 : 4.0);
+        const knockback = isLastHit ? baseKnockback : baseKnockback * 0.18;
+
         defender.takeDamage(damage, attacker.facingDirection * knockback, false);
         attacker.comboCount = comboBeforeHit + 1;
         attacker.comboTimer = Math.max(attacker.comboTimer || 0, attacker.currentState === 'SPECIAL' ? 2.8 : 2.25);
         attacker.specialMeter = Math.min(attacker.maxSpecial || 100, (attacker.specialMeter || 0) + damage * 0.18);
 
         const baseHitStop = attacker.currentAttackSpec?.hitStop || (attacker.currentState === 'SPECIAL' ? 0.08 : 0.055);
-        const hitStop = baseHitStop + Math.min(comboBeforeHit, 5) * 0.01;
+        const hitStop = (isLastHit ? 1.0 : 0.7) * (baseHitStop + Math.min(comboBeforeHit, 5) * 0.01);
         if (attacker.applyHitStop) attacker.applyHitStop(hitStop);
         if (defender.applyHitStop) defender.applyHitStop(hitStop + 0.015);
         
         // Efecto visual de Impacto (Chispas amarillas/rojas)
         const sparkColor = attacker.currentState === 'SPECIAL' || comboBeforeHit >= 3 ? '#ffca28' : '#ff3d00';
-        const particleCount = (attacker.currentState === 'SPECIAL' ? 42 : 22) + Math.min(comboBeforeHit, 6) * 6;
-        this.spawnSparks(hitboxX, hitboxY, sparkColor, particleCount, 1.05 + Math.min(comboBeforeHit, 5) * 0.15);
+        const particleCount = ((attacker.currentState === 'SPECIAL' ? 42 : 22) + Math.min(comboBeforeHit, 6) * 6) * (isLastHit ? 1.0 : 0.65);
+        this.spawnSparks(hitboxX, hitboxY, sparkColor, Math.ceil(particleCount), (isLastHit ? 1.0 : 0.75) * (1.05 + Math.min(comboBeforeHit, 5) * 0.15));
         
         // Sacudida de cámara e impacto flash
         if (window.gameApp) {
           const isSpecial = attacker.currentState === 'SPECIAL';
           const baseShake = isSpecial ? 0.35 : 0.16;
           const comboShake = Math.min(comboBeforeHit, 6) * 0.04;
-          window.gameApp.triggerCameraShake(baseShake + comboShake);
+          const shakeFactor = isLastHit ? 1.0 : 0.45;
+          window.gameApp.triggerCameraShake((baseShake + comboShake) * shakeFactor);
           
           // Flash de pantalla en golpes pesados o especiales
-          if (isSpecial || comboBeforeHit >= 4) {
+          if (isLastHit && (isSpecial || comboBeforeHit >= 4)) {
             UIManager.triggerFlash();
           }
         }
 
-        // Reproducir sonido e ElevenLabs / Sonido de impacto
+        // Reproducir sonido de impacto
         if (attacker.currentState === 'SPECIAL') {
           if (attacker.characterType === 'orsi') AudioManager.play('special_orsi');
           else if (attacker.characterType === 'lacalle') AudioManager.play('special_lacalle');
