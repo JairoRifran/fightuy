@@ -5,6 +5,7 @@
 
 import * as THREE from 'three';
 import AudioManager from './AudioManager.js';
+import UIManager from '../UI/UIManager.js';
 
 class CollisionSystem {
   constructor() {
@@ -105,15 +106,15 @@ class CollisionSystem {
                           (defender.facingDirection !== attacker.facingDirection);
 
       if (isBlocking) {
-        // Impacto bloqueado: menor daño, menor retroceso
+        // Impacto bloqueado: menor daño, menor retroceso, destello azul
         const damage = attacker.currentAttackDamage * 0.15; // 15% daño
         defender.takeDamage(damage, attacker.facingDirection * 1.5, true);
-        const blockStop = Math.max(0.03, (attacker.currentAttackSpec?.hitStop || 0.05) * 0.65);
+        const blockStop = Math.max(0.035, (attacker.currentAttackSpec?.hitStop || 0.05) * 0.7);
         if (attacker.applyHitStop) attacker.applyHitStop(blockStop);
         if (defender.applyHitStop) defender.applyHitStop(blockStop + 0.01);
         
         // Efecto visual de Bloqueo (Destello azul/blanco)
-        this.spawnSparks(hitboxX, hitboxY, '#00d2ff', 10);
+        this.spawnSparks(hitboxX, hitboxY, '#00d2ff', 12, 0.85);
         AudioManager.play('block');
       } else {
         // Impacto pleno
@@ -126,16 +127,29 @@ class CollisionSystem {
         attacker.comboTimer = Math.max(attacker.comboTimer || 0, attacker.currentState === 'SPECIAL' ? 2.8 : 2.25);
         attacker.specialMeter = Math.min(attacker.maxSpecial || 100, (attacker.specialMeter || 0) + damage * 0.18);
 
-        const baseHitStop = attacker.currentAttackSpec?.hitStop || (attacker.currentState === 'SPECIAL' ? 0.075 : 0.055);
-        const hitStop = baseHitStop + Math.min(comboBeforeHit, 5) * 0.008;
+        const baseHitStop = attacker.currentAttackSpec?.hitStop || (attacker.currentState === 'SPECIAL' ? 0.08 : 0.055);
+        const hitStop = baseHitStop + Math.min(comboBeforeHit, 5) * 0.01;
         if (attacker.applyHitStop) attacker.applyHitStop(hitStop);
         if (defender.applyHitStop) defender.applyHitStop(hitStop + 0.015);
         
         // Efecto visual de Impacto (Chispas amarillas/rojas)
         const sparkColor = attacker.currentState === 'SPECIAL' || comboBeforeHit >= 3 ? '#ffca28' : '#ff3d00';
-        const particleCount = (attacker.currentState === 'SPECIAL' ? 38 : 20) + Math.min(comboBeforeHit, 6) * 5;
-        this.spawnSparks(hitboxX, hitboxY, sparkColor, particleCount, 1 + Math.min(comboBeforeHit, 5) * 0.12);
+        const particleCount = (attacker.currentState === 'SPECIAL' ? 42 : 22) + Math.min(comboBeforeHit, 6) * 6;
+        this.spawnSparks(hitboxX, hitboxY, sparkColor, particleCount, 1.05 + Math.min(comboBeforeHit, 5) * 0.15);
         
+        // Sacudida de cámara e impacto flash
+        if (window.gameApp) {
+          const isSpecial = attacker.currentState === 'SPECIAL';
+          const baseShake = isSpecial ? 0.35 : 0.16;
+          const comboShake = Math.min(comboBeforeHit, 6) * 0.04;
+          window.gameApp.triggerCameraShake(baseShake + comboShake);
+          
+          // Flash de pantalla en golpes pesados o especiales
+          if (isSpecial || comboBeforeHit >= 4) {
+            UIManager.triggerFlash();
+          }
+        }
+
         // Reproducir sonido e ElevenLabs / Sonido de impacto
         if (attacker.currentState === 'SPECIAL') {
           if (attacker.characterType === 'orsi') AudioManager.play('special_orsi');
@@ -148,11 +162,12 @@ class CollisionSystem {
 
         // Sonido de queja del receptor
         setTimeout(() => {
+          if (defender.isDead) return; // Si murio, omitir sonido de queja ordinario
           if (defender.characterType === 'orsi') AudioManager.play('voice_orsi_hit');
           else if (defender.characterType === 'lacalle') AudioManager.play('voice_lacalle_hit');
           else if (defender.characterType === 'humano') AudioManager.play('voice_humano_hit');
           else AudioManager.play('hit');
-        }, 100);
+        }, 80);
       }
     }
   }
@@ -160,24 +175,28 @@ class CollisionSystem {
   // Generador de partículas de chispas en 3D
   spawnSparks(x, y, color, count, scale = 1) {
     const material = new THREE.MeshBasicMaterial({
-      color: new THREE.Color(color),
+      color: new THREE.Color('#ffffff'), // Comienzan al rojo vivo/blanco
       transparent: true,
       opacity: 1.0,
       blending: THREE.AdditiveBlending
     });
 
-    const geometry = new THREE.SphereGeometry(0.06 * scale, 4, 4);
+    const geometry = new THREE.SphereGeometry(0.055 * scale, 4, 4);
 
+    const startColor = new THREE.Color('#ffffff'); // Blanco incandescente
+    const endColor = new THREE.Color(color);       // Color de enfriamiento
+
+    // 1. Spawnear las chispas ordinarias
     for (let i = 0; i < count; i++) {
       const mesh = new THREE.Mesh(geometry, material.clone());
-      mesh.position.set(x, y + (Math.random() - 0.5) * 0.5, 0.5); // Posicionados ligeramente al frente (Z=0.5)
+      mesh.position.set(x, y + (Math.random() - 0.5) * 0.4, 0.5); // Posicionados al frente (Z=0.5)
       
       // Velocidad aleatoria en 3D
       const angle = Math.random() * Math.PI * 2;
-      const speed = (2.0 + Math.random() * 5.0) * scale;
+      const speed = (2.2 + Math.random() * 5.5) * scale;
       const velocity = new THREE.Vector3(
         Math.cos(angle) * speed,
-        (Math.sin(angle) * speed) + 2.0, // Impulso hacia arriba
+        (Math.sin(angle) * speed) + 2.2, // Impulso hacia arriba
         (Math.random() - 0.5) * speed * 0.5
       );
 
@@ -185,10 +204,34 @@ class CollisionSystem {
       this.particles.push({
         mesh: mesh,
         velocity: velocity,
-        life: 1.0 * Math.min(1.45, scale),
-        decay: (2.0 + Math.random() * 2.0) / Math.min(1.3, scale)
+        life: 1.0 * Math.min(1.4, scale),
+        decay: (2.2 + Math.random() * 2.2) / Math.min(1.3, scale),
+        isSpark: true,
+        startColor: startColor.clone(),
+        endColor: endColor.clone()
       });
     }
+
+    // 2. Spawnear el anillo de choque expansivo (Shockwave Ring)
+    const ringGeo = new THREE.RingGeometry(0.08, 0.12, 16);
+    const ringMat = new THREE.MeshBasicMaterial({
+      color: new THREE.Color(color),
+      side: THREE.DoubleSide,
+      transparent: true,
+      opacity: 0.9,
+      blending: THREE.AdditiveBlending
+    });
+    const ringMesh = new THREE.Mesh(ringGeo, ringMat);
+    ringMesh.position.set(x, y, 0.52); // Ligeramente por delante
+    this.particleGroup.add(ringMesh);
+
+    this.particles.push({
+      mesh: ringMesh,
+      isRing: true,
+      life: 1.0,
+      decay: 4.8, // Muere rapido (aprox 0.2s)
+      maxScale: 6.8 * scale
+    });
   }
 
   // Actualiza y anima las partículas activas
@@ -206,15 +249,25 @@ class CollisionSystem {
         p.mesh.material.dispose();
         this.particles.splice(i, 1);
       } else {
-        // Aplicar gravedad y mover
-        p.velocity.y -= 9.8 * deltaTime; // Gravedad
-        p.mesh.position.addScaledVector(p.velocity, deltaTime);
-        
-        // Desvanecimiento gradual
-        p.mesh.material.opacity = p.life;
-        
-        // Escalar hacia abajo a medida que muere
-        p.mesh.scale.setScalar(p.life);
+        if (p.isRing) {
+          // Escalar onda de choque expansiva y desvanecer
+          const currentScale = (1.0 - p.life) * p.maxScale;
+          p.mesh.scale.set(currentScale, currentScale, 1.0);
+          p.mesh.material.opacity = p.life * 0.9;
+        } else if (p.isSpark) {
+          // Aplicar gravedad y mover
+          p.velocity.y -= 9.8 * deltaTime; // Gravedad
+          p.mesh.position.addScaledVector(p.velocity, deltaTime);
+          
+          // Desvanecimiento gradual
+          p.mesh.material.opacity = p.life;
+          
+          // Escalar hacia abajo a medida que muere
+          p.mesh.scale.setScalar(p.life);
+
+          // LERP de color: De blanco encandescente a color base/brasa
+          p.mesh.material.color.lerpColors(p.endColor, p.startColor, p.life);
+        }
       }
     }
   }

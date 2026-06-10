@@ -305,6 +305,8 @@ class Fighter {
     this.hitStunTimer = 0;
     this.hitStopTimer = 0;
     this.landingLockTimer = 0;
+    this.hitFlashColor = new THREE.Color(0, 0, 0);
+    this.hitFlashIntensity = 0;
 
     // Ataques
     this.isAttacking = false;
@@ -721,6 +723,8 @@ class Fighter {
 
     if (this.activeAnimationKey === key && !forceRestart) return;
 
+    this.restoreOriginalEmissive();
+
     const oldKey = this.activeAnimationKey;
     this.activeAnimationKey = key;
 
@@ -928,12 +932,32 @@ class Fighter {
 
   // LÃ³gica de Inputs y fÃ­sica del luchador
   update(dt, opponentPositionX) {
+    // Decaer intensidad de flash de golpe si esta activo
+    if (this.hitFlashIntensity > 0) {
+      this.hitFlashIntensity = Math.max(0, this.hitFlashIntensity - dt * 4.2);
+      this.applyHitFlash();
+      if (this.hitFlashIntensity === 0) {
+        this.restoreOriginalEmissive();
+      }
+    }
+
     if (this.hitStopTimer > 0) {
       this.hitStopTimer = Math.max(0, this.hitStopTimer - dt);
       this.moveDirection = 0;
       this.depthDirection = 0;
+
+      // Vibracion de malla rapida e intensa en X para dar peso al impacto
+      const shakeAmp = 0.12 * this.hitFlashIntensity;
+      const shakeOffset = (Math.random() - 0.5) * shakeAmp;
+      this.mesh.position.x = this.position.x + shakeOffset;
+      this.mesh.position.y = this.position.y;
+      this.mesh.position.z = this.position.z;
+
       return;
     }
+
+    // Asegurar que la posicion de render coincida exactamente
+    this.mesh.position.copy(this.position);
 
     this.stateTimer += dt;
     if (this.actionBufferTimer > 0) {
@@ -1135,6 +1159,48 @@ class Fighter {
     this.hitStopTimer = Math.max(this.hitStopTimer, duration);
   }
 
+  // Aplica destello emissivo al modelo (rojo en impacto, azul en bloqueo)
+  applyHitFlash() {
+    const model = this.usesGLB ? this.characterModels[this.activeAnimationKey] : this.proceduralGroup;
+    if (!model) return;
+
+    model.traverse((node) => {
+      if (node.isMesh && node.material) {
+        const mats = Array.isArray(node.material) ? node.material : [node.material];
+        mats.forEach(mat => {
+          if (mat.emissive) {
+            // Guardar color emissivo original la primera vez
+            if (mat._origEmissive === undefined) {
+              mat._origEmissive = mat.emissive.clone();
+              mat._origEmissiveIntensity = mat.emissiveIntensity !== undefined ? mat.emissiveIntensity : 0.0;
+            }
+            // Aplicar color de flash
+            mat.emissive.copy(this.hitFlashColor);
+            mat.emissiveIntensity = this.hitFlashIntensity * 1.5;
+          }
+        });
+      }
+    });
+  }
+
+  // Restaura los colores emissivos originales
+  restoreOriginalEmissive() {
+    const model = this.usesGLB ? this.characterModels[this.activeAnimationKey] : this.proceduralGroup;
+    if (!model) return;
+
+    model.traverse((node) => {
+      if (node.isMesh && node.material) {
+        const mats = Array.isArray(node.material) ? node.material : [node.material];
+        mats.forEach(mat => {
+          if (mat._origEmissive !== undefined) {
+            mat.emissive.copy(mat._origEmissive);
+            mat.emissiveIntensity = mat._origEmissiveIntensity;
+          }
+        });
+      }
+    });
+  }
+
   playIntroAnimation(animKeyOrSeed = 0, fadeDuration = null) {
     const introKeys = this.config?.introKeys || [];
     const availableKeys = introKeys.filter(key => this.characterModels[key]);
@@ -1253,6 +1319,12 @@ class Fighter {
     if (isBlocked) {
       this.health -= amount;
       this.velocity.x = knockbackX;
+      
+      // Flash emissivo azul al bloquear
+      this.hitFlashColor.set('#00a2ff');
+      this.hitFlashIntensity = 0.85;
+      this.applyHitFlash();
+
       if (window.gameApp) {
         window.gameApp.triggerCameraShake(0.04); // Pequeño temblor al bloquear
       }
@@ -1268,6 +1340,11 @@ class Fighter {
       this.isAttacking = false;
       this.currentAttackSpec = null;
       this.currentAttackDirection = this.facingDirection;
+
+      // Flash emissivo blanco-rojo al recibir golpe
+      this.hitFlashColor.set(amount > 20 ? '#ffffff' : '#ff3d00');
+      this.hitFlashIntensity = 1.0;
+      this.applyHitFlash();
 
       if (window.gameApp) {
         const shakeIntensity = amount > 20 ? 0.28 : 0.12; // Temblor pesado para golpes especiales/fuertes, medio para normales

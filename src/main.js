@@ -1,4 +1,4 @@
-﻿/* ==========================================================================
+/* ==========================================================================
    FIGHTUY - MAIN COORDINATOR (Punto de Entrada)
    Inicializa Three.js, vincula los botones de la interfaz y orquesta el combate
    ========================================================================== */
@@ -341,9 +341,11 @@ class GameApp {
     });
 
     document.getElementById('btn-menu-back').addEventListener('click', () => {
+      AudioManager.stopBGM();
+      AudioManager.stopDialogue();
       UIManager.showScreen('menu');
       this.gameState = 'MENU';
-      // Cargar un escenario decorativo de fondo en el menÃº
+      // Cargar un escenario decorativo de fondo en el menú
       StageManager.loadStage('torre', this.scene, this.renderer);
     });
 
@@ -378,6 +380,10 @@ class GameApp {
 
   // Prepara los peleadores y el escenario seleccionado
   prepareMatch() {
+    // Detener musica y dialogo anterior activo
+    AudioManager.stopBGM();
+    AudioManager.stopDialogue();
+
     // Limpiar anteriores
     if (this.player1) this.player1.destroy();
     if (this.player2) this.player2.destroy();
@@ -504,6 +510,9 @@ class GameApp {
     const line = this.dialogueLines[this.currentDialogueIndex];
     this.isDialogueTyping = true;
     
+    // Reproducir linea de voz via ElevenLabs / SpeechSynthesis
+    AudioManager.playDialogue(line.text, line.speaker);
+    
     UIManager.updateStoryDialogue(line, () => {
       this.isDialogueTyping = false;
     });
@@ -511,23 +520,28 @@ class GameApp {
 
   advanceDialogue() {
     if (this.isDialogueTyping) {
-      // Si estÃ¡ escribiÃ©ndose, completarlo inmediatamente
+      // Si está escribiéndose, completarlo inmediatamente
       const line = this.dialogueLines[this.currentDialogueIndex];
       UIManager.completeStoryDialogue(line.text);
       this.isDialogueTyping = false;
     } else {
-      // Avanzar a la siguiente lÃ­nea
+      // Detener dialogo de voz en curso antes de avanzar
+      AudioManager.stopDialogue();
+
+      // Avanzar a la siguiente línea
       this.currentDialogueIndex++;
       if (this.currentDialogueIndex < this.dialogueLines.length) {
         this.showNextDialogueLine();
       } else {
-        // Fin del diÃ¡logo, comenzar combate
+        // Fin del diálogo, comenzar combate
         this.startCombatLoop();
       }
     }
   }
 
   skipDialogue() {
+    AudioManager.stopDialogue(); // Silenciar historia
+
     if (UIManager.dialogueInterval) {
       clearInterval(UIManager.dialogueInterval);
       UIManager.dialogueInterval = null;
@@ -544,6 +558,7 @@ class GameApp {
     if (this.gameMode === 'practice') {
       this.gameState = 'FIGHT';
       UIManager.triggerAnnouncer('ENTRENAMIENTO', 1500);
+      AudioManager.startBGM('practice');
       setTimeout(() => {
         UIManager.triggerAnnouncer('A PRACTICAR', 1000);
       }, 1500);
@@ -730,12 +745,14 @@ class GameApp {
           this.introPhase = 'NONE';
           this.gameState = 'FIGHT';
           UIManager.triggerAnnouncer('FIGHT!', 1000);
+          AudioManager.startBGM('combat');
         }
       } else if (this.introPhase === 'ROUND_START_DIRECT') {
         if (this.introTimer >= 1.5) {
           this.introPhase = 'NONE';
           this.gameState = 'FIGHT';
           UIManager.triggerAnnouncer('FIGHT!', 1000);
+          AudioManager.startBGM('combat');
         }
       }
 
@@ -1031,6 +1048,7 @@ class GameApp {
   resolveRoundKO() {
     this.gameState = 'ROUND_OUTRO';
     UIManager.triggerAnnouncer('K.O.', 2000);
+    AudioManager.stopBGM(); // Silenciar música
 
     // Detener a los personajes
     this.player1.velocity.set(0,0,0);
@@ -1045,6 +1063,7 @@ class GameApp {
   resolveRoundTimeout() {
     this.gameState = 'ROUND_OUTRO';
     UIManager.triggerAnnouncer('TIEMPO', 2000);
+    AudioManager.stopBGM(); // Silenciar música
 
     // El que tenga mÃ¡s vida gana
     if (this.player1.health > this.player2.health) {

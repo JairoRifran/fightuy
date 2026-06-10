@@ -6,6 +6,9 @@ class AudioManager {
     this.remoteBuffers = {};
     this.remoteAudioPending = new Set();
     this.isUnlocked = false;
+    this.activeDialogueSource = null;
+    this.bgmActive = false;
+    this.bgmInterval = null;
 
     this.soundPaths = {
       click: '/assets/audio/click.mp3',
@@ -281,6 +284,182 @@ class AudioManager {
     this.playTone(150, 760, duration, 0.48, 'sawtooth', now);
     this.playTone(220, 1120, duration * 0.75, 0.22, 'triangle', now + 0.08);
     this.playNoiseBurst(duration * 0.5, 0.18, 720, 'bandpass', now + 0.05);
+  }
+
+  // Reproduce una linea de dialogo de historia
+  playDialogue(text, speaker) {
+    this.initContext();
+    this.stopDialogue(); // Detener cualquier dialogo anterior activo
+    void this.playDialogueVoice(text, speaker);
+  }
+
+  // Detiene la voz del dialogo activo (SpeechSynthesis o Web Audio)
+  stopDialogue() {
+    if (window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+    }
+    if (this.activeDialogueSource) {
+      try {
+        this.activeDialogueSource.stop();
+      } catch (e) {}
+      this.activeDialogueSource = null;
+    }
+  }
+
+  // Intenta generar el audio via ElevenLabs, y si falla pasa al sintetizador del navegador
+  async playDialogueVoice(text, speaker) {
+    if (!this.ctx) return;
+
+    // Crear una clave de cache basada en locutor y texto
+    const cacheKey = `dialogue_${speaker}_${text.slice(0, 32).replace(/[^a-zA-Z0-9]/g, '_')}`;
+
+    if (this.remoteBuffers[cacheKey]) {
+      this.activeDialogueSource = this.playBufferGetSource(this.remoteBuffers[cacheKey], 1.05);
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/elevenlabs-sound', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text, speaker })
+      });
+
+      if (!response.ok) throw new Error(`Status ${response.status}`);
+
+      const arrayBuffer = await response.arrayBuffer();
+      const audioBuffer = await this.ctx.decodeAudioData(arrayBuffer);
+      this.remoteBuffers[cacheKey] = audioBuffer;
+
+      // Reproducir solo si no se ha detenido en el medio
+      this.activeDialogueSource = this.playBufferGetSource(audioBuffer, 1.05);
+    } catch (err) {
+      console.warn(`[AudioManager] Fallback a SpeechSynthesis por error de ElevenLabs para: "${text.slice(0, 30)}..."`, err);
+      this.speakText(text, speaker);
+    }
+  }
+
+  // Fallback con la API SpeechSynthesis de HTML5 en Español
+  speakText(text, speaker) {
+    if (!window.speechSynthesis) return;
+
+    // Cancelar cualquier discurso previo
+    window.speechSynthesis.cancel();
+
+    const utterance = new SpeechSynthesisUtterance(text);
+    
+    // Obtener voces en español del navegador
+    const voices = window.speechSynthesis.getVoices();
+    const voice = voices.find(v => v.lang.startsWith('es-UY')) ||
+                  voices.find(v => v.lang.startsWith('es-AR')) ||
+                  voices.find(v => v.lang.startsWith('es-ES')) ||
+                  voices.find(v => v.lang.startsWith('es'));
+
+    if (voice) {
+      utterance.voice = voice;
+    }
+    utterance.lang = 'es-UY';
+
+    // Ajustar caracteristicas segun el locutor para mayor realismo y comedia
+    if (speaker === 'orsi') {
+      utterance.pitch = 0.82; // Tono mas bajo
+      utterance.rate = 0.88;   // Habla pausada de campo/Canelones
+    } else if (speaker === 'lacalle') {
+      utterance.pitch = 1.08;  // Tono mas alto/energetico
+      utterance.rate = 1.02;   // Habla mas rapida y cheta
+    } else if (speaker === 'announcer') {
+      utterance.pitch = 0.7;   // Tono muy grave estilo arcade
+      utterance.rate = 0.95;
+    } else {
+      utterance.pitch = 1.0;
+      utterance.rate = 1.0;
+    }
+
+    utterance.volume = this.volume;
+    window.speechSynthesis.speak(utterance);
+  }
+
+  // Reproduce un bufer de audio y retorna el source node para poder detenerlo
+  playBufferGetSource(buffer, volumeScale = 1) {
+    if (!this.ctx) return null;
+
+    const source = this.ctx.createBufferSource();
+    const gainNode = this.ctx.createGain();
+    source.buffer = buffer;
+    gainNode.gain.setValueAtTime(this.volume * volumeScale, this.ctx.currentTime);
+    source.connect(gainNode);
+    gainNode.connect(this.ctx.destination);
+    source.start(0);
+    return source;
+  }
+
+  // Inicia la musica sintetizada de combate estilo Synthwave
+  startBGM(themeType = 'combat') {
+    this.initContext();
+    if (this.bgmInterval) return; // Ya esta sonando
+
+    let tempo = 120; // BPM
+    let stepTime = 60 / tempo / 2; // Corcheas (1/8 notes)
+    let step = 0;
+
+    // Lineas de bajo rítmico (Notas en Hz)
+    // Yamandu y combate standard: A1 (55Hz), C2 (65.4Hz), D2 (73.4Hz), E2 (82.4Hz)
+    const bassline = [
+      55, 55, 65.4, 73.4, 55, 55, 73.4, 82.4,
+      55, 55, 65.4, 73.4, 82.4, 82.4, 73.4, 65.4
+    ];
+
+    this.bgmActive = true;
+
+    const playSynthStep = () => {
+      if (!this.bgmActive || !this.ctx) return;
+
+      const now = this.ctx.currentTime;
+
+      // 1. Sintetizador de Bajo (sawtooth + sub sine) en cada negra (steps pares)
+      if (step % 2 === 0) {
+        const noteIdx = Math.floor(step / 2) % bassline.length;
+        const freq = bassline[noteIdx];
+        
+        // Bajo principal tipo synthwave
+        this.playTone(freq, freq * 0.99, stepTime * 1.6, 0.12, 'sawtooth', now);
+        // Sub-bajo redondo
+        this.playTone(freq / 2, freq / 2, stepTime * 1.4, 0.2, 'sine', now);
+      }
+
+      // 2. Hi-Hat Retro (ruido blanco rapido en off-beats)
+      if (step % 2 === 1) {
+        this.playNoiseBurst(0.04, 0.04, 3800, 'highpass', now);
+      }
+
+      // 3. Bombo Analogico (Kick) en pulsos 0, 4, 6 de un patron de 8 corcheas
+      const beat = step % 8;
+      if (beat === 0 || beat === 4 || beat === 6) {
+        // Impacto de bombo sintetizado (barrido de frecuencia rapido hacia abajo)
+        this.playTone(130, 48, 0.14, 0.28, 'sine', now);
+        this.playTone(190, 60, 0.035, 0.15, 'triangle', now); // Golpe de mazo
+      }
+
+      // 4. Caja Retro (Snare) en pasos 4 del patron (combina ruido de frecuencia media y tono)
+      if (beat === 4) {
+        this.playNoiseBurst(0.12, 0.12, 1100, 'bandpass', now);
+        this.playTone(180, 90, 0.09, 0.08, 'triangle', now);
+      }
+
+      step++;
+    };
+
+    // Usar un bucle estable
+    this.bgmInterval = setInterval(playSynthStep, stepTime * 1000);
+  }
+
+  // Detiene la musica de combate de inmediato
+  stopBGM() {
+    this.bgmActive = false;
+    if (this.bgmInterval) {
+      clearInterval(this.bgmInterval);
+      this.bgmInterval = null;
+    }
   }
 }
 
