@@ -117,17 +117,24 @@ class CollisionSystem {
         AudioManager.play('block');
       } else {
         // Impacto pleno
-        const damage = attacker.currentAttackDamage;
+        const comboBeforeHit = attacker.comboCount || 0;
+        const comboMultiplier = 1 + Math.min(comboBeforeHit, 7) * 0.08;
+        const damage = attacker.currentAttackDamage * comboMultiplier;
         const knockback = attacker.currentAttackSpec?.knockback || (attacker.currentState === 'SPECIAL' ? 5.0 : 4.0);
         defender.takeDamage(damage, attacker.facingDirection * knockback, false);
-        const hitStop = attacker.currentAttackSpec?.hitStop || (attacker.currentState === 'SPECIAL' ? 0.075 : 0.055);
+        attacker.comboCount = comboBeforeHit + 1;
+        attacker.comboTimer = Math.max(attacker.comboTimer || 0, attacker.currentState === 'SPECIAL' ? 2.8 : 2.25);
+        attacker.specialMeter = Math.min(attacker.maxSpecial || 100, (attacker.specialMeter || 0) + damage * 0.18);
+
+        const baseHitStop = attacker.currentAttackSpec?.hitStop || (attacker.currentState === 'SPECIAL' ? 0.075 : 0.055);
+        const hitStop = baseHitStop + Math.min(comboBeforeHit, 5) * 0.008;
         if (attacker.applyHitStop) attacker.applyHitStop(hitStop);
         if (defender.applyHitStop) defender.applyHitStop(hitStop + 0.015);
         
         // Efecto visual de Impacto (Chispas amarillas/rojas)
-        const sparkColor = attacker.currentState === 'SPECIAL' ? '#ffca28' : '#ff3d00';
-        const particleCount = attacker.currentState === 'SPECIAL' ? 35 : 18;
-        this.spawnSparks(hitboxX, hitboxY, sparkColor, particleCount);
+        const sparkColor = attacker.currentState === 'SPECIAL' || comboBeforeHit >= 3 ? '#ffca28' : '#ff3d00';
+        const particleCount = (attacker.currentState === 'SPECIAL' ? 38 : 20) + Math.min(comboBeforeHit, 6) * 5;
+        this.spawnSparks(hitboxX, hitboxY, sparkColor, particleCount, 1 + Math.min(comboBeforeHit, 5) * 0.12);
         
         // Reproducir sonido e ElevenLabs / Sonido de impacto
         if (attacker.currentState === 'SPECIAL') {
@@ -151,7 +158,7 @@ class CollisionSystem {
   }
 
   // Generador de partículas de chispas en 3D
-  spawnSparks(x, y, color, count) {
+  spawnSparks(x, y, color, count, scale = 1) {
     const material = new THREE.MeshBasicMaterial({
       color: new THREE.Color(color),
       transparent: true,
@@ -159,7 +166,7 @@ class CollisionSystem {
       blending: THREE.AdditiveBlending
     });
 
-    const geometry = new THREE.SphereGeometry(0.06, 4, 4);
+    const geometry = new THREE.SphereGeometry(0.06 * scale, 4, 4);
 
     for (let i = 0; i < count; i++) {
       const mesh = new THREE.Mesh(geometry, material.clone());
@@ -167,7 +174,7 @@ class CollisionSystem {
       
       // Velocidad aleatoria en 3D
       const angle = Math.random() * Math.PI * 2;
-      const speed = 2.0 + Math.random() * 5.0;
+      const speed = (2.0 + Math.random() * 5.0) * scale;
       const velocity = new THREE.Vector3(
         Math.cos(angle) * speed,
         (Math.sin(angle) * speed) + 2.0, // Impulso hacia arriba
@@ -178,8 +185,8 @@ class CollisionSystem {
       this.particles.push({
         mesh: mesh,
         velocity: velocity,
-        life: 1.0, // Vida en segundos
-        decay: 2.0 + Math.random() * 2.0 // Velocidad de desaparición
+        life: 1.0 * Math.min(1.45, scale),
+        decay: (2.0 + Math.random() * 2.0) / Math.min(1.3, scale)
       });
     }
   }

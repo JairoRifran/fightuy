@@ -55,18 +55,18 @@ const CHARACTER_CONFIGS = {
     attacks: {
       punch: {
         animationKey: 'circular',
-        targetDuration: 0.9,
-        fallbackDuration: 0.9,
+        targetDuration: 0.98,
+        fallbackDuration: 0.98,
         activeStart: 0.3,
-        activeEnd: 0.58,
+        activeEnd: 0.64,
         lungeStart: 0.22,
         lungeEnd: 0.5,
         lungeSpeed: 0.75,
-        damage: 10,
-        range: 1.65,
+        damage: 11,
+        range: 1.72,
         height: 1.1,
         knockback: 3.2,
-        hitStop: 0.055
+        hitStop: 0.065
       },
       kick: {
         animationKey: 'kick',
@@ -77,26 +77,26 @@ const CHARACTER_CONFIGS = {
         lungeStart: 0.16,
         lungeEnd: 0.5,
         lungeSpeed: 1.45,
-        damage: 12,
-        range: 1.85,
+        damage: 13,
+        range: 1.92,
         height: 0.75,
         knockback: 3.8,
-        hitStop: 0.06
+        hitStop: 0.068
       },
       special: {
         animationKey: 'spartan',
-        targetDuration: 1.0,
-        fallbackDuration: 1.0,
+        targetDuration: 1.08,
+        fallbackDuration: 1.08,
         activeStart: 0.24,
-        activeEnd: 0.66,
+        activeEnd: 0.72,
         lungeStart: 0.16,
         lungeEnd: 0.68,
         lungeSpeed: 3.1,
-        damage: 28,
-        range: 2.55,
+        damage: 31,
+        range: 2.65,
         height: 1.0,
         knockback: 5.4,
-        hitStop: 0.085
+        hitStop: 0.1
       }
     }
   },
@@ -119,63 +119,63 @@ const CHARACTER_CONFIGS = {
     attacks: {
       punch: {
         animationKey: 'punchJumping',
-        targetDuration: 0.65,
-        fallbackDuration: 0.65,
+        targetDuration: 0.76,
+        fallbackDuration: 0.76,
         activeStart: 0.32,
-        activeEnd: 0.62,
+        activeEnd: 0.7,
         lungeStart: 0.18,
         lungeEnd: 0.46,
         lungeSpeed: 1.1,
-        damage: 9,
-        range: 1.55,
+        damage: 10,
+        range: 1.65,
         height: 1.25,
         knockback: 3.0,
-        hitStop: 0.052
+        hitStop: 0.064
       },
       kick: {
         animationKey: 'kick',
-        targetDuration: 0.70,
-        fallbackDuration: 0.70,
+        targetDuration: 0.78,
+        fallbackDuration: 0.78,
         activeStart: 0.34,
         activeEnd: 0.72,
         lungeStart: 0.22,
         lungeEnd: 0.62,
         lungeSpeed: 1.2,
-        damage: 11,
-        range: 1.8,
+        damage: 12,
+        range: 1.88,
         height: 0.35,
         knockback: 3.5,
-        hitStop: 0.058
+        hitStop: 0.066
       },
       kickCircular: {
         animationKey: 'circular',
-        targetDuration: 0.68,
-        fallbackDuration: 0.68,
+        targetDuration: 0.8,
+        fallbackDuration: 0.8,
         activeStart: 0.3,
-        activeEnd: 0.65,
+        activeEnd: 0.72,
         lungeStart: 0.18,
         lungeEnd: 0.55,
         lungeSpeed: 1.3,
-        damage: 12,
-        range: 1.75,
+        damage: 13,
+        range: 1.9,
         height: 0.8,
         knockback: 3.6,
-        hitStop: 0.06
+        hitStop: 0.07
       },
       special: {
         animationKey: 'spartan',
-        targetDuration: 0.80,
-        fallbackDuration: 0.80,
+        targetDuration: 0.92,
+        fallbackDuration: 0.92,
         activeStart: 0.24,
-        activeEnd: 0.66,
+        activeEnd: 0.74,
         lungeStart: 0.16,
         lungeEnd: 0.7,
         lungeSpeed: 3.0,
-        damage: 25,
-        range: 2.35,
+        damage: 29,
+        range: 2.52,
         height: 0.95,
         knockback: 5.1,
-        hitStop: 0.08
+        hitStop: 0.096
       }
     }
   },
@@ -194,48 +194,48 @@ const CHARACTER_CONFIGS = {
     attacks: {
       punch: {
         animationKey: 'punchCombo',
-        targetDuration: 0.82,
-        fallbackDuration: 0.82,
+        targetDuration: 1.08,
+        fallbackDuration: 1.08,
         activeStart: 0.2,
-        activeEnd: 0.72,
+        activeEnd: 0.86,
         lungeStart: 0.14,
         lungeEnd: 0.58,
         lungeSpeed: 1.35,
-        damage: 13,
-        range: 1.62,
+        damage: 15,
+        range: 1.78,
         height: 1.1,
         knockback: 3.25,
-        hitStop: 0.06
+        hitStop: 0.076
       },
       kick: {
         animationKey: 'kick',
-        targetDuration: 0.76,
-        fallbackDuration: 0.76,
+        targetDuration: 0.86,
+        fallbackDuration: 0.86,
         activeStart: 0.28,
         activeEnd: 0.62,
         lungeStart: 0.16,
         lungeEnd: 0.5,
         lungeSpeed: 1.45,
-        damage: 12,
-        range: 1.85,
+        damage: 13,
+        range: 1.95,
         height: 0.78,
         knockback: 3.8,
-        hitStop: 0.06
+        hitStop: 0.068
       },
       special: {
         animationKey: 'elbow',
-        targetDuration: 0.78,
-        fallbackDuration: 0.78,
+        targetDuration: 0.96,
+        fallbackDuration: 0.96,
         activeStart: 0.24,
-        activeEnd: 0.6,
+        activeEnd: 0.72,
         lungeStart: 0.12,
         lungeEnd: 0.56,
         lungeSpeed: 2.85,
-        damage: 24,
-        range: 2.05,
+        damage: 28,
+        range: 2.25,
         height: 1.25,
         knockback: 5.0,
-        hitStop: 0.085
+        hitStop: 0.1
       }
     }
   }
@@ -1258,8 +1258,6 @@ class Fighter {
       }
     } else {
       this.health -= amount;
-      this.comboCount++;
-      this.comboTimer = 2.0; 
       
       this.specialMeter = Math.min(this.maxSpecial, this.specialMeter + amount * 0.4);
 

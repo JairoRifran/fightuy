@@ -5,6 +5,7 @@ class AudioManager {
     this.loadedBuffers = {};
     this.remoteBuffers = {};
     this.remoteAudioPending = new Set();
+    this.isUnlocked = false;
 
     this.soundPaths = {
       click: '/assets/audio/click.mp3',
@@ -38,8 +39,9 @@ class AudioManager {
       'voice_humano_hit'
     ]);
 
-    window.addEventListener('click', () => this.initContext(), { once: true });
-    window.addEventListener('keydown', () => this.initContext(), { once: true });
+    ['pointerdown', 'touchstart', 'mousedown', 'keydown', 'click'].forEach((eventName) => {
+      window.addEventListener(eventName, () => this.unlockAudio(), { capture: true, passive: true });
+    });
   }
 
   initContext() {
@@ -51,6 +53,20 @@ class AudioManager {
     if (this.ctx.state === 'suspended') {
       void this.ctx.resume();
     }
+  }
+
+  unlockAudio() {
+    this.initContext();
+    if (!this.ctx || this.isUnlocked) return;
+
+    const source = this.ctx.createBufferSource();
+    const gainNode = this.ctx.createGain();
+    source.buffer = this.ctx.createBuffer(1, 1, this.ctx.sampleRate);
+    gainNode.gain.setValueAtTime(0.0001, this.ctx.currentTime);
+    source.connect(gainNode);
+    gainNode.connect(this.ctx.destination);
+    source.start(0);
+    this.isUnlocked = true;
   }
 
   setVolume(vol) {
