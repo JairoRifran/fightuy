@@ -133,6 +133,7 @@ class CollisionSystem {
         if (attacker.currentState === 'SPECIAL') {
           if (attacker.characterType === 'orsi') AudioManager.play('special_orsi');
           else if (attacker.characterType === 'lacalle') AudioManager.play('special_lacalle');
+          else if (attacker.characterType === 'humano') AudioManager.play('special_humano');
           else AudioManager.play('hit');
         } else {
           AudioManager.play(attacker.currentState === 'KICK' ? 'kick' : 'punch');
@@ -142,6 +143,7 @@ class CollisionSystem {
         setTimeout(() => {
           if (defender.characterType === 'orsi') AudioManager.play('voice_orsi_hit');
           else if (defender.characterType === 'lacalle') AudioManager.play('voice_lacalle_hit');
+          else if (defender.characterType === 'humano') AudioManager.play('voice_humano_hit');
           else AudioManager.play('hit');
         }, 100);
       }

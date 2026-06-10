@@ -163,10 +163,10 @@ class GameApp {
           const result = await AuthManager.signUp({ email, password, username });
           if (result?.needsEmailConfirmation) {
             UIManager.setAuthMode('login');
-            UIManager.setAuthMessage('Usuario creado. RevisÃ¡ tu email para confirmar la cuenta y despuÃ©s entrÃ¡.', 'success');
+            UIManager.setAuthMessage('Usuario creado. Revisa tu email para confirmar la cuenta y despues entra.', 'success');
             return;
           }
-          UIManager.setAuthMessage('Usuario creado. Ya podÃ©s entrar al combate.', 'success');
+          UIManager.setAuthMessage('Usuario creado. Ya podes entrar al combate.', 'success');
         } else {
           await AuthManager.signIn({ email, password });
         }
@@ -193,17 +193,17 @@ class GameApp {
   getAuthErrorMessage(error) {
     const message = error?.message || String(error);
 
-    if (message.includes('Invalid login credentials')) return 'Email o contraseÃ±a incorrectos.';
-    if (message.includes('Password should be')) return 'La contraseÃ±a debe tener al menos 6 caracteres.';
-    if (message.includes('User already registered')) return 'Ese email ya estÃ¡ registrado.';
-    if (message.includes('Email not confirmed')) return 'RevisÃ¡ tu email para confirmar la cuenta.';
+    if (message.includes('Invalid login credentials')) return 'Email o contrasena incorrectos.';
+    if (message.includes('Password should be')) return 'La contrasena debe tener al menos 6 caracteres.';
+    if (message.includes('User already registered')) return 'Ese email ya esta registrado.';
+    if (message.includes('Email not confirmed')) return 'Revisa tu email para confirmar la cuenta.';
 
     return message;
   }
 
   async openOwnerPanel() {
     if (!AuthManager.isOwner()) {
-      UIManager.setAuthMessage('Este panel es solo para el dueÃ±o del producto.', 'error');
+      UIManager.setAuthMessage('Este panel es solo para el dueno del producto.', 'error');
       return;
     }
 
@@ -485,14 +485,14 @@ class GameApp {
           name: opponentName,
           portrait: 'right',
           text: humanoIsPlayer
-            ? `${opponentName} intenta mantener la guardia, pero el gateo de entrada rompió todo el protocolo.`
+            ? `${opponentName} intenta mantener la guardia, pero el gateo de entrada rompio todo el protocolo.`
             : 'El Humano aparece gateando como si el escenario fuera suyo. Nadie sabe si es amenaza, protesta o performance.'
         },
         {
           speaker: 'humano',
           name: 'El Humano',
           portrait: humanoIsPlayer ? 'left' : 'right',
-          text: 'La política pidió orden. El Humano trajo otra cosa.'
+          text: 'La politica pidio orden. El Humano trajo otra cosa.'
         }
       ];
     }
@@ -545,7 +545,7 @@ class GameApp {
       this.gameState = 'FIGHT';
       UIManager.triggerAnnouncer('ENTRENAMIENTO', 1500);
       setTimeout(() => {
-        UIManager.triggerAnnouncer('Â¡A PRACTICAR!', 1000);
+        UIManager.triggerAnnouncer('A PRACTICAR', 1000);
       }, 1500);
       return;
     }
@@ -566,10 +566,12 @@ class GameApp {
       this.p1Anim1Key = p1Available[0] || 'idle';
       this.p1Anim2Key = p1Available[1] || this.p1Anim1Key;
 
-      this.p1Anim1Duration = this.player1 && this.player1.playIntroAnimation ?
-        this.player1.getGLBClipDuration(this.p1Anim1Key, 1.8) : 1.8;
-      this.p1Anim2Duration = this.player1 && this.player1.playIntroAnimation ?
-        this.player1.getGLBClipDuration(this.p1Anim2Key, 1.8) : 1.8;
+      this.p1Anim1Duration = this.player1 && this.player1.playIntroAnimation
+        ? this.player1.getGLBClipDuration(this.p1Anim1Key, 1.8)
+        : 1.8;
+      this.p1Anim2Duration = this.player1 && this.player1.playIntroAnimation
+        ? this.player1.getGLBClipDuration(this.p1Anim2Key, 1.8)
+        : 1.8;
 
       // Obtener las claves de animaciÃ³n cargadas y disponibles para P2
       const p2Keys = this.player2?.config?.introKeys || [];
@@ -577,10 +579,12 @@ class GameApp {
       this.p2Anim1Key = p2Available[0] || 'idle';
       this.p2Anim2Key = p2Available[1] || this.p2Anim1Key;
 
-      this.p2Anim1Duration = this.player2 && this.player2.playIntroAnimation ?
-        this.player2.getGLBClipDuration(this.p2Anim1Key, 2.0) : 2.0;
-      this.p2Anim2Duration = this.player2 && this.player2.playIntroAnimation ?
-        this.player2.getGLBClipDuration(this.p2Anim2Key, 2.0) : 2.0;
+      this.p2Anim1Duration = this.player2 && this.player2.playIntroAnimation
+        ? this.player2.getGLBClipDuration(this.p2Anim1Key, 2.0)
+        : 2.0;
+      this.p2Anim2Duration = this.player2 && this.player2.playIntroAnimation
+        ? this.player2.getGLBClipDuration(this.p2Anim2Key, 2.0)
+        : 2.0;
 
       // La duraciÃ³n total de la intro es la suma de ambas animaciones mÃ¡s el tiempo de pose hold, restando el solapamiento (overlap)
       const POSE_HOLD_TIME = 1.2; // 1.2 segundos para mantener la pose brevemente antes del combate o transiciÃ³n
@@ -1040,7 +1044,7 @@ class GameApp {
   // ResoluciÃ³n por fin de tiempo
   resolveRoundTimeout() {
     this.gameState = 'ROUND_OUTRO';
-    UIManager.triggerAnnouncer('Â¡TIEMPO!', 2000);
+    UIManager.triggerAnnouncer('TIEMPO', 2000);
 
     // El que tenga mÃ¡s vida gana
     if (this.player1.health > this.player2.health) {

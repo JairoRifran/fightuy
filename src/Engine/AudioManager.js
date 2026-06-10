@@ -8,6 +8,8 @@ class AudioManager {
     this.ctx = null;
     this.volume = 0.8; // Rango: 0.0 a 1.0
     this.loadedBuffers = {};
+    this.remoteAudioUrls = {};
+    this.remoteAudioPending = new Set();
     
     // Mapeo de sonidos a nombres de archivo en /public/assets/audio/
     this.soundPaths = {
@@ -21,10 +23,23 @@ class AudioManager {
       block: '/assets/audio/block.mp3',
       special_orsi: '/assets/audio/special_orsi.mp3', // ElevenLabs Orsi
       special_lacalle: '/assets/audio/special_lacalle.mp3', // ElevenLabs Lacalle
+      special_humano: '/assets/audio/special_humano.mp3',
       voice_orsi_hit: '/assets/audio/orsi_hit.mp3',
       voice_lacalle_hit: '/assets/audio/lacalle_hit.mp3',
+      voice_humano_hit: '/assets/audio/humano_hit.mp3',
       victory: '/assets/audio/victory.mp3'
     };
+
+    this.remoteVoiceTypes = new Set([
+      'fight',
+      'ko',
+      'special_orsi',
+      'special_lacalle',
+      'special_humano',
+      'voice_orsi_hit',
+      'voice_lacalle_hit',
+      'voice_humano_hit'
+    ]);
 
     // Registrar inicio de interacción del usuario para desbloquear Web Audio Context
     window.addEventListener('click', () => this.initContext(), { once: true });
@@ -72,8 +87,51 @@ class AudioManager {
       return;
     }
 
+    if (this.remoteVoiceTypes.has(soundName)) {
+      void this.playRemoteVoice(soundName);
+      return;
+    }
+
     // Fallback Sintetizado por Software (Web Audio API)
     this.playSyntheticFallback(soundName);
+  }
+
+  async playRemoteVoice(soundName) {
+    if (this.remoteAudioUrls[soundName]) {
+      this.playHtmlAudio(this.remoteAudioUrls[soundName]);
+      return;
+    }
+
+    if (this.remoteAudioPending.has(soundName)) {
+      this.playSyntheticFallback(soundName);
+      return;
+    }
+
+    this.remoteAudioPending.add(soundName);
+    try {
+      const response = await fetch('/api/elevenlabs-sound', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: soundName })
+      });
+
+      if (!response.ok) throw new Error(`ElevenLabs status ${response.status}`);
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      this.remoteAudioUrls[soundName] = url;
+      this.playHtmlAudio(url);
+    } catch (err) {
+      console.warn(`No se pudo generar audio remoto "${soundName}". Usando fallback.`, err);
+      this.playSyntheticFallback(soundName);
+    } finally {
+      this.remoteAudioPending.delete(soundName);
+    }
+  }
+
+  playHtmlAudio(url) {
+    const audio = new Audio(url);
+    audio.volume = this.volume;
+    audio.play().catch(() => this.playSyntheticFallback('hit'));
   }
 
   playBuffer(buffer) {
@@ -190,6 +248,7 @@ class AudioManager {
 
       case 'special_orsi':
       case 'special_lacalle':
+      case 'special_humano':
         // Crecimiento de tono de súper habilidad
         osc.type = 'sawtooth';
         osc.frequency.setValueAtTime(150, now);

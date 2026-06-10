@@ -42,7 +42,7 @@ class UIManager {
     const devNote = document.getElementById('auth-dev-note');
 
     if (accountName) {
-      accountName.textContent = isSupabaseEnabled ? `Usuario: ${userName}` : `Modo local: ${userName}`;
+      accountName.textContent = `Usuario: ${userName}`;
     }
 
     if (devNote) {
@@ -87,12 +87,12 @@ class UIManager {
 
     this.renderProfileList('profile-characters-list', allCharacters, (item) => `
       <div class="profile-list-main">${this.escapeHtml(this.getCharacterName(item.character_id))}</div>
-      <div class="profile-list-meta">${this.escapeHtml(item.source || 'desbloqueado')} ${item.created_at ? `Â· ${this.formatDate(item.created_at)}` : ''}</div>
+      <div class="profile-list-meta">${this.escapeHtml(item.source || 'desbloqueado')} ${item.created_at ? `- ${this.formatDate(item.created_at)}` : ''}</div>
     `);
 
     this.renderProfileList('profile-payments-list', payments, (payment) => `
       <div class="profile-list-main">${this.escapeHtml(payment.product_id || payment.product_type || 'compra')}</div>
-      <div class="profile-list-meta">${this.formatMoney(payment.amount_cents || 0)} Â· ${this.escapeHtml(payment.status || 'estado')} Â· ${this.formatDate(payment.created_at)}</div>
+      <div class="profile-list-meta">${this.formatMoney(payment.amount_cents || 0)} - ${this.escapeHtml(payment.status || 'estado')} - ${this.formatDate(payment.created_at)}</div>
     `);
 
     this.renderProfileList('profile-events-list', events, (event) => `
@@ -106,7 +106,7 @@ class UIManager {
     if (!container) return;
 
     if (!items.length) {
-      container.innerHTML = '<div class="profile-empty">Sin datos todavÃ­a.</div>';
+      container.innerHTML = '<div class="profile-empty">Sin datos todavia.</div>';
       return;
     }
 
@@ -140,17 +140,17 @@ class UIManager {
 
     this.renderOwnerList('owner-users-list', data?.recent_users || [], (user) => `
       <div class="owner-list-main">${this.escapeHtml(user.username || user.email || 'Usuario')}</div>
-      <div class="owner-list-meta">${this.escapeHtml(user.email || 'sin email')} Â· ${this.formatDate(user.created_at)}</div>
+      <div class="owner-list-meta">${this.escapeHtml(user.email || 'sin email')} - ${this.formatDate(user.created_at)}</div>
     `);
 
     this.renderOwnerList('owner-events-list', data?.recent_events || [], (event) => `
       <div class="owner-list-main">${this.escapeHtml(event.event_name || 'evento')}</div>
-      <div class="owner-list-meta">${this.escapeHtml(event.username || event.email || 'usuario')} Â· ${this.formatDate(event.created_at)}</div>
+      <div class="owner-list-meta">${this.escapeHtml(event.username || event.email || 'usuario')} - ${this.formatDate(event.created_at)}</div>
     `);
 
     this.renderOwnerList('owner-purchases-list', data?.purchases_by_character || [], (purchase) => `
       <div class="owner-list-main">${this.escapeHtml(purchase.character_id || 'personaje')}</div>
-      <div class="owner-list-meta">${purchase.sales || 0} ventas Â· ${this.formatMoney(purchase.revenue_cents || 0)}</div>
+      <div class="owner-list-meta">${purchase.sales || 0} ventas - ${this.formatMoney(purchase.revenue_cents || 0)}</div>
     `);
   }
 
@@ -159,7 +159,7 @@ class UIManager {
     if (!container) return;
 
     if (!items.length) {
-      container.innerHTML = '<div class="owner-empty">Sin datos todavÃ­a.</div>';
+      container.innerHTML = '<div class="owner-empty">Sin datos todavia.</div>';
       return;
     }
 
@@ -393,7 +393,7 @@ class UIManager {
     const p1NameElem = document.getElementById('hud-p1-name');
     const p1Data = getCharacterData(p1.characterType);
     const p1BaseName = p1Data.name;
-    const p1WinsText = p1WinsCount > 0 ? ' ' + 'â­'.repeat(p1WinsCount) : '';
+    const p1WinsText = p1WinsCount > 0 ? ' ' + '*'.repeat(p1WinsCount) : '';
     const p1NameText = p1BaseName + p1WinsText;
     if (p1NameElem && p1NameElem.textContent !== p1NameText) {
       p1NameElem.textContent = p1NameText;
@@ -407,7 +407,7 @@ class UIManager {
       const p2NameElem = document.getElementById('hud-p2-name');
       const p2Data = getCharacterData(p2.characterType);
       const p2BaseName = p2Data.name;
-      const p2WinsText = p2WinsCount > 0 ? ' ' + 'â­'.repeat(p2WinsCount) : '';
+      const p2WinsText = p2WinsCount > 0 ? ' ' + '*'.repeat(p2WinsCount) : '';
       const p2NameText = p2BaseName + p2WinsText;
       if (p2NameElem && p2NameElem.textContent !== p2NameText) {
         p2NameElem.textContent = p2NameText;
@@ -437,7 +437,7 @@ class UIManager {
     // Combos flotantes J1
     const p1Combo = document.getElementById('hud-p1-combo');
     if (p1.comboCount > 1) {
-      p1Combo.textContent = `Â¡${p1.comboCount} GOLPES!`;
+      p1Combo.textContent = `${p1.comboCount} GOLPES!`;
     } else {
       p1Combo.textContent = '';
     }
@@ -477,7 +477,7 @@ class UIManager {
     // Combos flotantes J2
     const p2Combo = document.getElementById('hud-p2-combo');
     if (p2.comboCount > 1) {
-      p2Combo.textContent = `Â¡${p2.comboCount} GOLPES!`;
+      p2Combo.textContent = `${p2.comboCount} GOLPES!`;
     } else {
       p2Combo.textContent = '';
     }

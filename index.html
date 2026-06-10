@@ -4,13 +4,13 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>FightUY - Elecciones a PuÃ±o Limpio</title>
+    <title>FightUY - Elecciones a Puno Limpio</title>
     <!-- CSS Estilos -->
     <link rel="stylesheet" href="/src/style.css" />
     <!-- Google Fonts: Outfit for UI, Orbitron for arcade fight elements -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2-family=Orbitron:wght@500;700;900&family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
   </head>
   <body>
     <!-- Debug Log Overlay para detectar errores de carga de archivos -->
@@ -24,7 +24,7 @@
           if (type === 'error') {
             debugBox.style.display = 'block';
           }
-          const color = type === 'error' ? '#ff3333' : (type === 'warn' ? '#ffaa00' : '#33ff33');
+          const color = type === 'error' - '#ff3333' : (type === 'warn' - '#ffaa00' : '#33ff33');
           
           const time = new Date().toLocaleTimeString();
           const line = document.createElement('div');
@@ -38,7 +38,7 @@
         }
 
         window.onerror = function(message, source, lineno, colno, error) {
-          const file = source ? source.split('/').pop() : 'unknown';
+          const file = source - source.split('/').pop() : 'unknown';
           showDebug(`EXCEPTION: ${message} (en ${file}:${lineno}:${colno})`, 'error');
           if (error && error.stack) {
             showDebug(`STACK: ${error.stack.split('\n').slice(0, 3).join(' | ')}`, 'error');
@@ -54,23 +54,23 @@
         const originalError = console.error;
         console.error = function(...args) {
           originalError.apply(console, args);
-          showDebug(args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' '), 'error');
+          showDebug(args.map(a => typeof a === 'object' - JSON.stringify(a) : String(a)).join(' '), 'error');
         };
 
         const originalWarn = console.warn;
         console.warn = function(...args) {
           originalWarn.apply(console, args);
-          showDebug(args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' '), 'warn');
+          showDebug(args.map(a => typeof a === 'object' - JSON.stringify(a) : String(a)).join(' '), 'warn');
         };
 
         const originalLog = console.log;
         console.log = function(...args) {
           originalLog.apply(console, args);
-          showDebug(args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' '), 'info');
+          showDebug(args.map(a => typeof a === 'object' - JSON.stringify(a) : String(a)).join(' '), 'info');
         };
 
-        // TambiÃ©n registrar el progreso de carga principal
-        showDebug("DiagnÃ³sticos inicializados...", "info");
+        // Tambien registrar el progreso de carga principal
+        showDebug("Diagnosticos inicializados...", "info");
       })();
     </script>
 
@@ -109,8 +109,8 @@
               <input id="auth-email" type="email" autocomplete="email" required placeholder="jugador@email.com">
             </label>
             <label class="auth-field">
-              <span>ContraseÃ±a</span>
-              <input id="auth-password" type="password" autocomplete="current-password" required minlength="6" placeholder="MÃ­nimo 6 caracteres">
+              <span>Contrasena</span>
+              <input id="auth-password" type="password" autocomplete="current-password" required minlength="6" placeholder="Minimo 6 caracteres">
             </label>
 
             <p id="auth-message" class="auth-message"></p>
@@ -118,7 +118,7 @@
           </form>
 
           <p id="auth-dev-note" class="auth-dev-note">
-            Modo local: faltan las claves de Supabase. El registro se guarda solo en este navegador.
+            Desarrollo: Supabase no esta configurado. El registro se guarda solo en este navegador.
           </p>
         </div>
       </div>
@@ -129,7 +129,7 @@
           <div class="flag-stripe stripe-blue"></div>
           <div class="flag-stripe stripe-white"></div>
           <h1 class="game-title">FIGHT<span>UY</span></h1>
-          <p class="game-subtitle">Elecciones a PuÃ±o Limpio</p>
+          <p class="game-subtitle">Elecciones a Puno Limpio</p>
         </div>
         
         <div class="account-strip">
@@ -143,13 +143,13 @@
           <button id="btn-vs-p2" class="btn-menu">VERSUS vs P2</button>
           <button id="btn-practice" class="btn-menu">ENTRENAMIENTO</button>
           <button id="btn-profile" class="btn-menu">MI PERFIL</button>
-          <button id="btn-owner-panel" class="btn-menu owner-only">PANEL DUEÃ‘O</button>
+          <button id="btn-owner-panel" class="btn-menu owner-only">PANEL DUENO</button>
           <button id="btn-options" class="btn-menu">OPCIONES</button>
-          <button id="btn-credits" class="btn-menu">CRÃ‰DITOS</button>
+          <button id="btn-credits" class="btn-menu">CREDITOS</button>
         </div>
         
         <div class="menu-footer">
-          <p>Uruguay Â© 2026 - YamandÃº vs Lacalle. Presione barra espaciadora para navegar.</p>
+          <p>Uruguay (c) 2026 - Yamandu vs Lacalle. Presione barra espaciadora para navegar.</p>
         </div>
       </div>
 
@@ -213,7 +213,7 @@
         <div class="owner-panel">
           <div class="owner-header">
             <div>
-              <h2 class="owner-title">Panel del dueÃ±o</h2>
+              <h2 class="owner-title">Panel del dueno</h2>
               <p class="owner-subtitle">Usuarios, actividad y compras del producto</p>
             </div>
             <div class="owner-actions">
@@ -286,13 +286,13 @@
         </div>
         
         <div class="selection-container">
-          <!-- Character 1 Card: YamandÃº -->
+          <!-- Character 1 Card: Yamandu -->
           <div class="char-card" id="card-orsi" data-char="orsi">
             <div class="char-banner banner-orsi">FA</div>
             <div class="char-portrait">
-              <img src="/assets/images/orsi.png" alt="YamandÃº Orsi">
+              <img src="/assets/images/orsi.png" alt="Yamandu Orsi">
             </div>
-            <h3 class="char-name">YamandÃº Orsi</h3>
+            <h3 class="char-name">Yamandu Orsi</h3>
             <p class="char-slogan">"Por la fuerza del campo y el mate cebado"</p>
             <div class="char-stats">
               <div class="stat-row"><span class="stat-name">Fuerza:</span><div class="stat-bar"><div class="stat-fill" style="width: 80%"></div></div></div>
@@ -318,7 +318,7 @@
               <div class="stat-row"><span class="stat-name">Mate-Power:</span><div class="stat-bar"><div class="stat-fill" style="width: 60%"></div></div></div>
             </div>
             <div class="char-description">
-              Ex-presidente y surfista profesional. Pelea usando su agilidad fÃ­sica, combos de flexiones de brazo y golpes de tabla.
+              Ex-presidente y surfista profesional. Pelea usando su agilidad fisica, combos de flexiones de brazo y golpes de tabla.
             </div>
           </div>
 
@@ -329,14 +329,14 @@
               <img src="/assets/images/humano.png" alt="El Humano">
             </div>
             <h3 class="char-name">El Humano</h3>
-            <p class="char-slogan">"Sigan viendo, que el humano todavÃ­a no terminÃ³"</p>
+            <p class="char-slogan">"Sigan viendo, que el humano todavia no termino"</p>
             <div class="char-stats">
               <div class="stat-row"><span class="stat-name">Fuerza:</span><div class="stat-bar"><div class="stat-fill" style="width: 74%"></div></div></div>
               <div class="stat-row"><span class="stat-name">Velocidad:</span><div class="stat-bar"><div class="stat-fill" style="width: 58%"></div></div></div>
               <div class="stat-row"><span class="stat-name">Rareza:</span><div class="stat-bar"><div class="stat-fill" style="width: 100%"></div></div></div>
             </div>
             <div class="char-description">
-              FenÃ³meno viral del Uruguay profundo de internet: reclamo callejero, energÃ­a inclasificable y una guardia que parece inventada en vivo.
+              Fenomeno viral del Uruguay profundo de internet: reclamo callejero, energia inclasificable y una guardia que parece inventada en vivo.
             </div>
           </div>
         </div>
@@ -354,7 +354,7 @@
           
           <div class="selection-buttons">
             <button id="btn-char-back" class="btn-ui secondary">VOLVER</button>
-            <button id="btn-char-start" class="btn-ui primary" disabled>Â¡PELEAR!</button>
+            <button id="btn-char-start" class="btn-ui primary" disabled>PELEAR</button>
           </div>
         </div>
       </div>
@@ -367,9 +367,9 @@
           <div class="story-portraits">
             <div class="story-portrait-left active" id="story-speaker-left">
               <div class="story-avatar-img">
-                <img src="/assets/images/orsi.png" alt="YamandÃº Orsi">
+                <img src="/assets/images/orsi.png" alt="Yamandu Orsi">
               </div>
-              <div class="story-name-tag font-orsi">YamandÃº</div>
+              <div class="story-name-tag font-orsi">Yamandu</div>
             </div>
             <div class="story-portrait-right" id="story-speaker-right">
               <div class="story-avatar-img">
@@ -382,15 +382,15 @@
           <!-- Dialogue Box -->
           <div class="dialogue-box">
             <div class="dialogue-header">
-              <span id="dialogue-speaker-name">YamandÃº Orsi</span>
+              <span id="dialogue-speaker-name">Yamandu Orsi</span>
               <button id="btn-skip-story" class="btn-skip">OMITIR</button>
             </div>
             <div class="dialogue-text-container">
-              <p id="dialogue-text">Bo, Luis... te dije que el termo se lleva abajo del brazo izquierdo, no podÃ©s andar con esa postura che...</p>
+              <p id="dialogue-text">Bo, Luis... te dije que el termo se lleva abajo del brazo izquierdo, no podes andar con esa postura che...</p>
             </div>
             <div class="dialogue-footer">
               <span class="dialogue-hint">Presiona ESPACIO para continuar</span>
-              <button id="btn-next-dialogue" class="btn-next">SIGUIENTE â–¶</button>
+              <button id="btn-next-dialogue" class="btn-next">SIGUIENTE &gt;</button>
             </div>
           </div>
         </div>
@@ -404,7 +404,7 @@
               <img src="/assets/images/orsi.png" alt="P1">
             </div>
             <div class="player-meta">
-              <span class="hud-player-name" id="hud-p1-name">YamandÃº Orsi</span>
+              <span class="hud-player-name" id="hud-p1-name">Yamandu Orsi</span>
               <span class="hud-combo-counter" id="hud-p1-combo"></span>
             </div>
           </div>
@@ -460,17 +460,17 @@
       <div id="screen-gameover" class="ui-screen">
         <div class="gameover-container glass-card">
           <h2 id="gameover-title" class="victory-title">VICTORIA</h2>
-          <p id="gameover-message" class="victory-message">YamandÃº Orsi gana la presidencia</p>
+          <p id="gameover-message" class="victory-message">Yamandu Orsi gana la presidencia</p>
           
           <div class="fight-stats">
-            <div class="stat-item"><span>DaÃ±o Total:</span><span id="stat-damage">420</span></div>
+            <div class="stat-item"><span>Dano Total:</span><span id="stat-damage">420</span></div>
             <div class="stat-item"><span>Tiempo Restante:</span><span id="stat-time">45s</span></div>
             <div class="stat-item"><span>Max Combo:</span><span id="stat-combo">5 Golpes</span></div>
           </div>
 
           <div class="gameover-buttons">
             <button id="btn-restart" class="btn-ui primary">REINTENTAR</button>
-            <button id="btn-menu-back" class="btn-ui secondary">MENÃš PRINCIPAL</button>
+            <button id="btn-menu-back" class="btn-ui secondary">MENU PRINCIPAL</button>
           </div>
         </div>
       </div>
@@ -483,9 +483,9 @@
           <div class="option-row">
             <label for="options-difficulty">DIFICULTAD IA:</label>
             <div class="difficulty-selector">
-              <button class="btn-diff active" data-diff="easy">FÃCIL</button>
+              <button class="btn-diff active" data-diff="easy">FACIL</button>
               <button class="btn-diff" data-diff="medium">MEDIO</button>
-              <button class="btn-diff" data-diff="hard">DIFÃCIL</button>
+              <button class="btn-diff" data-diff="hard">DIFICIL</button>
             </div>
           </div>
 
@@ -503,20 +503,20 @@
                   <li><strong>A / D</strong>: Moverse Izq / Der</li>
                   <li><strong>W</strong>: Saltar</li>
                   <li><strong>S</strong>: Bloquear ataque</li>
-                  <li><strong>F</strong>: PuÃ±etazo rÃ¡pido</li>
+                  <li><strong>F</strong>: Punetazo rapido</li>
                   <li><strong>G</strong>: Patada fuerte</li>
-                  <li><strong>V</strong>: Â¡ATAQUE ESPECIAL!</li>
+                  <li><strong>V</strong>: ATAQUE ESPECIAL</li>
                 </ul>
               </div>
               <div class="control-col">
                 <h4>JUGADOR 2 / CPU</h4>
                 <ul>
-                  <li><strong>â—„ / â–º</strong>: Moverse Izq / Der</li>
-                  <li><strong>â–²</strong>: Saltar</li>
-                  <li><strong>â–¼</strong>: Bloquear ataque</li>
-                  <li><strong>J</strong>: PuÃ±etazo rÃ¡pido</li>
+                  <li><strong>&lt; / &gt;</strong>: Moverse Izq / Der</li>
+                  <li><strong>Arriba</strong>: Saltar</li>
+                  <li><strong>Abajo</strong>: Bloquear ataque</li>
+                  <li><strong>J</strong>: Punetazo rapido</li>
                   <li><strong>K</strong>: Patada fuerte</li>
-                  <li><strong>N</strong>: Â¡ATAQUE ESPECIAL!</li>
+                  <li><strong>N</strong>: ATAQUE ESPECIAL</li>
                 </ul>
               </div>
             </div>
@@ -530,7 +530,7 @@
       <div id="screen-credits" class="ui-screen">
         <div class="credits-container glass-card">
           <h2 class="credits-title">CREDITOS</h2>
-          <p class="credits-intro">Un tributo satÃ­rico de pelea sobre la polÃ­tica uruguaya.</p>
+          <p class="credits-intro">Un tributo satirico de pelea sobre la politica uruguaya.</p>
           
           <div class="credits-list">
             <div class="credit-section">
@@ -539,15 +539,15 @@
             </div>
             <div class="credit-section">
               <h4>Modelado 3D & Animaciones</h4>
-              <p>PrÃ³ximamente archivos GLB del usuario</p>
+              <p>Proximamente archivos GLB del usuario</p>
             </div>
             <div class="credit-section">
               <h4>Efectos de Voz</h4>
-              <p>ElevenLabs AI voices (YamandÃº & Luis)</p>
+              <p>ElevenLabs AI voices (Yamandu & Luis)</p>
             </div>
             <div class="credit-section">
-              <h4>InspiraciÃ³n</h4>
-              <p>La Rambla, Plaza Independencia, Estadio Centenario, la pasiÃ³n uruguaya y el buen mate.</p>
+              <h4>Inspiracion</h4>
+              <p>La Rambla, Plaza Independencia, Estadio Centenario, la pasion uruguaya y el buen mate.</p>
             </div>
           </div>
 

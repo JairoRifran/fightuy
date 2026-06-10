@@ -7,6 +7,7 @@ const FREE_CHARACTERS = new Set(['orsi', 'lacalle', 'humano']);
 class AuthManager {
   constructor() {
     this.enabled = Boolean(SUPABASE_URL && SUPABASE_ANON_KEY);
+    this.allowLocalMode = !import.meta.env.PROD && !this.enabled;
     this.supabase = this.enabled ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
     this.session = null;
     this.profile = null;
@@ -17,6 +18,9 @@ class AuthManager {
 
   async init() {
     if (!this.enabled) {
+      if (!this.allowLocalMode) {
+        throw new Error('Faltan las variables publicas de Supabase en Vercel. Agrega VITE_SUPABASE_URL y VITE_SUPABASE_ANON_KEY para habilitar usuarios reales.');
+      }
       const savedUser = localStorage.getItem('fightuy_local_user');
       this.localUser = savedUser ? JSON.parse(savedUser) : null;
       return this.getCurrentUser();
@@ -44,22 +48,22 @@ class AuthManager {
   }
 
   getCurrentUser() {
-    if (!this.enabled) return this.localUser;
+    if (this.allowLocalMode) return this.localUser;
     return this.session?.user || null;
   }
 
   getDisplayName() {
-    if (!this.enabled) return this.localUser?.username || 'Jugador local';
+    if (this.allowLocalMode) return this.localUser?.username || 'Jugador';
     return this.profile?.username || this.session?.user?.email || 'Jugador';
   }
 
   isOwner() {
-    if (!this.enabled) return true;
+    if (this.allowLocalMode) return true;
     return this.profile?.role === 'owner';
   }
 
   async signUp({ email, password, username }) {
-    if (!this.enabled) {
+    if (this.allowLocalMode) {
       this.localUser = {
         id: `local_${Date.now()}`,
         email,
@@ -95,7 +99,7 @@ class AuthManager {
   }
 
   async signIn({ email, password }) {
-    if (!this.enabled) {
+    if (this.allowLocalMode) {
       const savedUser = localStorage.getItem('fightuy_local_user');
       if (!savedUser) throw new Error('Crea un usuario local primero.');
       this.localUser = JSON.parse(savedUser);
@@ -111,7 +115,7 @@ class AuthManager {
   }
 
   async signOut() {
-    if (!this.enabled) {
+    if (this.allowLocalMode) {
       this.localUser = null;
       localStorage.removeItem('fightuy_local_user');
       return;
@@ -168,7 +172,7 @@ class AuthManager {
   }
 
   async getOwnerDashboard() {
-    if (!this.enabled) {
+    if (this.allowLocalMode) {
       return {
         totals: {
           users: 1,
@@ -193,7 +197,7 @@ class AuthManager {
   }
 
   async getPlayerProfile() {
-    if (!this.enabled) {
+    if (this.allowLocalMode) {
       return {
         profile: this.localUser ? {
           username: this.localUser.username,
