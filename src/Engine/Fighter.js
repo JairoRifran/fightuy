@@ -5,6 +5,7 @@
 
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import AudioManager from './AudioManager.js';
 import { KTX2Loader } from 'three/examples/jsm/loaders/KTX2Loader.js';
 import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
 
@@ -1229,6 +1230,10 @@ class Fighter {
     this.changeState(stateName);
     this.isAttacking = true;
     this.hasHitThisAttack = false;
+
+    if (stateName === 'SPECIAL') AudioManager.play('special_charge');
+    else if (stateName === 'KICK') AudioManager.play('kick_swing');
+    else AudioManager.play('punch_swing');
   }
 
   isAttackActive() {

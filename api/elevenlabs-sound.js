@@ -22,7 +22,15 @@ export default async function handler(req, res) {
     return res.status(503).json({ error: 'ELEVENLABS_API_KEY no configurada' });
   }
 
-  const type = req.body?.type;
+  let body = req.body;
+  if (typeof body === 'string') {
+    try {
+      body = JSON.parse(body || '{}');
+    } catch {
+      return res.status(400).json({ error: 'JSON invalido' });
+    }
+  }
+  const type = body?.type;
   const text = SOUND_PROMPTS[type];
   if (!text) {
     return res.status(400).json({ error: 'Tipo de sonido invalido' });
