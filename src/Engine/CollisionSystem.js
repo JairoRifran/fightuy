@@ -131,14 +131,18 @@ class CollisionSystem {
         
         // Reproducir sonido e ElevenLabs / Sonido de impacto
         if (attacker.currentState === 'SPECIAL') {
-          AudioManager.play(attacker.characterType === 'orsi' ? 'special_orsi' : 'special_lacalle');
+          if (attacker.characterType === 'orsi') AudioManager.play('special_orsi');
+          else if (attacker.characterType === 'lacalle') AudioManager.play('special_lacalle');
+          else AudioManager.play('hit');
         } else {
           AudioManager.play(attacker.currentState === 'KICK' ? 'kick' : 'punch');
         }
 
         // Sonido de queja del receptor
         setTimeout(() => {
-          AudioManager.play(defender.characterType === 'orsi' ? 'voice_orsi_hit' : 'voice_lacalle_hit');
+          if (defender.characterType === 'orsi') AudioManager.play('voice_orsi_hit');
+          else if (defender.characterType === 'lacalle') AudioManager.play('voice_lacalle_hit');
+          else AudioManager.play('hit');
         }, 100);
       }
     }

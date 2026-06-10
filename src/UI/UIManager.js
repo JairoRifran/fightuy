@@ -1,17 +1,19 @@
-/* ==========================================================================
+﻿/* ==========================================================================
    FIGHTUY - UI MANAGER
-   Maneja la navegación de pantallas y la sincronización del HUD e interfaz
+   Maneja la navegaciÃ³n de pantallas y la sincronizaciÃ³n del HUD e interfaz
    ========================================================================== */
 
 import AudioManager from '../Engine/AudioManager.js';
+import { CHARACTER_IDS, getCharacterData } from '../Engine/CharacterData.js';
 
 class UIManager {
   constructor() {
     this.activeScreen = 'screen-main-menu';
     this.selectedChar = null; // 'orsi' o 'lacalle'
+    this.selectedOpponent = null;
     this.authMode = 'login';
     
-    // Referencias a los elementos del DOM (Caché)
+    // Referencias a los elementos del DOM (CachÃ©)
     this.screens = {
       auth: document.getElementById('screen-auth'),
       menu: document.getElementById('screen-main-menu'),
@@ -85,12 +87,12 @@ class UIManager {
 
     this.renderProfileList('profile-characters-list', allCharacters, (item) => `
       <div class="profile-list-main">${this.escapeHtml(this.getCharacterName(item.character_id))}</div>
-      <div class="profile-list-meta">${this.escapeHtml(item.source || 'desbloqueado')} ${item.created_at ? `· ${this.formatDate(item.created_at)}` : ''}</div>
+      <div class="profile-list-meta">${this.escapeHtml(item.source || 'desbloqueado')} ${item.created_at ? `Â· ${this.formatDate(item.created_at)}` : ''}</div>
     `);
 
     this.renderProfileList('profile-payments-list', payments, (payment) => `
       <div class="profile-list-main">${this.escapeHtml(payment.product_id || payment.product_type || 'compra')}</div>
-      <div class="profile-list-meta">${this.formatMoney(payment.amount_cents || 0)} · ${this.escapeHtml(payment.status || 'estado')} · ${this.formatDate(payment.created_at)}</div>
+      <div class="profile-list-meta">${this.formatMoney(payment.amount_cents || 0)} Â· ${this.escapeHtml(payment.status || 'estado')} Â· ${this.formatDate(payment.created_at)}</div>
     `);
 
     this.renderProfileList('profile-events-list', events, (event) => `
@@ -104,7 +106,7 @@ class UIManager {
     if (!container) return;
 
     if (!items.length) {
-      container.innerHTML = '<div class="profile-empty">Sin datos todavía.</div>';
+      container.innerHTML = '<div class="profile-empty">Sin datos todavÃ­a.</div>';
       return;
     }
 
@@ -112,12 +114,7 @@ class UIManager {
   }
 
   getCharacterName(characterId) {
-    const names = {
-      orsi: 'Yamandú Orsi',
-      lacalle: 'Luis Lacalle Pou'
-    };
-
-    return names[characterId] || characterId || 'Personaje';
+    return getCharacterData(characterId).name || characterId || 'Personaje';
   }
 
   setOwnerMessage(message, type = 'info') {
@@ -143,17 +140,17 @@ class UIManager {
 
     this.renderOwnerList('owner-users-list', data?.recent_users || [], (user) => `
       <div class="owner-list-main">${this.escapeHtml(user.username || user.email || 'Usuario')}</div>
-      <div class="owner-list-meta">${this.escapeHtml(user.email || 'sin email')} · ${this.formatDate(user.created_at)}</div>
+      <div class="owner-list-meta">${this.escapeHtml(user.email || 'sin email')} Â· ${this.formatDate(user.created_at)}</div>
     `);
 
     this.renderOwnerList('owner-events-list', data?.recent_events || [], (event) => `
       <div class="owner-list-main">${this.escapeHtml(event.event_name || 'evento')}</div>
-      <div class="owner-list-meta">${this.escapeHtml(event.username || event.email || 'usuario')} · ${this.formatDate(event.created_at)}</div>
+      <div class="owner-list-meta">${this.escapeHtml(event.username || event.email || 'usuario')} Â· ${this.formatDate(event.created_at)}</div>
     `);
 
     this.renderOwnerList('owner-purchases-list', data?.purchases_by_character || [], (purchase) => `
       <div class="owner-list-main">${this.escapeHtml(purchase.character_id || 'personaje')}</div>
-      <div class="owner-list-meta">${purchase.sales || 0} ventas · ${this.formatMoney(purchase.revenue_cents || 0)}</div>
+      <div class="owner-list-meta">${purchase.sales || 0} ventas Â· ${this.formatMoney(purchase.revenue_cents || 0)}</div>
     `);
   }
 
@@ -162,7 +159,7 @@ class UIManager {
     if (!container) return;
 
     if (!items.length) {
-      container.innerHTML = '<div class="owner-empty">Sin datos todavía.</div>';
+      container.innerHTML = '<div class="owner-empty">Sin datos todavÃ­a.</div>';
       return;
     }
 
@@ -293,28 +290,52 @@ class UIManager {
     }
   }
 
-  // Resalta visualmente el candidato seleccionado
-  selectCharacter(charId) {
-    AudioManager.play('select');
-    this.selectedChar = charId;
-    
-    const cardOrsi = document.getElementById('card-orsi');
-    const cardLacalle = document.getElementById('card-lacalle');
+  resetCharacterSelection() {
+    this.selectedChar = null;
+    this.selectedOpponent = null;
+    document.querySelectorAll('.char-card').forEach(card => {
+      card.classList.remove('selected', 'opponent-selected');
+    });
+    this.updateVSSelectionStatus();
     const startBtn = document.getElementById('btn-char-start');
-
-    if (charId === 'orsi') {
-      cardOrsi.classList.add('selected');
-      cardLacalle.classList.remove('selected');
-    } else {
-      cardLacalle.classList.add('selected');
-      cardOrsi.classList.remove('selected');
-    }
-
-    // Activar botón de Pelea una vez elegido
-    startBtn.disabled = false;
+    if (startBtn) startBtn.disabled = true;
   }
 
-  // Lógica de diálogos del Modo Historia
+  // Resalta visualmente el candidato seleccionado y arma el versus.
+  selectCharacter(charId, mode = 'story') {
+    AudioManager.play('select');
+    const needsOpponent = mode !== 'practice';
+    const startBtn = document.getElementById('btn-char-start');
+
+    if (!this.selectedChar || this.selectedChar === charId) {
+      this.selectedChar = charId;
+      if (this.selectedOpponent === charId) this.selectedOpponent = null;
+    } else {
+      this.selectedOpponent = charId;
+    }
+
+    document.querySelectorAll('.char-card').forEach(card => {
+      const cardChar = card.getAttribute('data-char');
+      card.classList.toggle('selected', cardChar === this.selectedChar);
+      card.classList.toggle('opponent-selected', cardChar === this.selectedOpponent);
+    });
+
+    this.updateVSSelectionStatus();
+
+    if (startBtn) {
+      startBtn.disabled = needsOpponent ? !(this.selectedChar && this.selectedOpponent) : !this.selectedChar;
+    }
+  }
+
+  updateVSSelectionStatus() {
+    const playerChoice = document.getElementById('vs-player-choice');
+    const opponentChoice = document.getElementById('vs-opponent-choice');
+
+    if (playerChoice) playerChoice.textContent = this.selectedChar ? this.getCharacterName(this.selectedChar) : 'Elegir';
+    if (opponentChoice) opponentChoice.textContent = this.selectedOpponent ? this.getCharacterName(this.selectedOpponent) : 'Elegir';
+  }
+
+  // LÃ³gica de diÃ¡logos del Modo Historia
   updateStoryDialogue(dialogueLine, onCompleteTypeCallback) {
     const textContainer = document.getElementById('dialogue-text');
     const speakerName = document.getElementById('dialogue-speaker-name');
@@ -323,7 +344,7 @@ class UIManager {
 
     speakerName.textContent = dialogueLine.name;
 
-    // Actualizar quién habla (Iluminar retrato y apagar el otro)
+    // Actualizar quiÃ©n habla (Iluminar retrato y apagar el otro)
     if (dialogueLine.portrait === 'left') {
       speakerLeft.classList.add('active');
       speakerRight.classList.remove('active');
@@ -334,7 +355,7 @@ class UIManager {
       speakerName.className = 'font-lacalle-text';
     }
 
-    // Efecto de máquina de escribir profesional
+    // Efecto de mÃ¡quina de escribir profesional
     let currentIdx = 0;
     textContainer.textContent = '';
     
@@ -351,7 +372,7 @@ class UIManager {
     }, 20); // Velocidad de tipeo: 20ms por letra
   }
 
-  // Salta el tipeo y muestra la línea completa de golpe
+  // Salta el tipeo y muestra la lÃ­nea completa de golpe
   completeStoryDialogue(lineText) {
     if (this.dialogueInterval) {
       clearInterval(this.dialogueInterval);
@@ -360,31 +381,33 @@ class UIManager {
     document.getElementById('dialogue-text').textContent = lineText;
   }
 
-  // Actualización de barras del HUD en tiempo real
+  // ActualizaciÃ³n de barras del HUD en tiempo real
   updateHUD(p1, p2, timerSeconds, roundNumber, p1WinsCount = 0, p2WinsCount = 0) {
     // Actualizar nombres y fotos en el HUD si no coinciden
     const p1NameElem = document.getElementById('hud-p1-name');
-    const p1BaseName = p1.characterType === 'orsi' ? 'Yamandú Orsi' : 'Luis Lacalle Pou';
-    const p1WinsText = p1WinsCount > 0 ? ' ' + '⭐'.repeat(p1WinsCount) : '';
+    const p1Data = getCharacterData(p1.characterType);
+    const p1BaseName = p1Data.name;
+    const p1WinsText = p1WinsCount > 0 ? ' ' + 'â­'.repeat(p1WinsCount) : '';
     const p1NameText = p1BaseName + p1WinsText;
     if (p1NameElem && p1NameElem.textContent !== p1NameText) {
       p1NameElem.textContent = p1NameText;
       const p1PortraitElem = document.querySelector('#hud-p1-portrait img');
       if (p1PortraitElem) {
-        p1PortraitElem.src = p1.characterType === 'orsi' ? '/assets/images/orsi.png' : '/assets/images/lacalle.png';
+        p1PortraitElem.src = p1Data.portrait || '/assets/images/orsi.png';
       }
     }
 
     if (p2) {
       const p2NameElem = document.getElementById('hud-p2-name');
-      const p2BaseName = p2.characterType === 'orsi' ? 'Yamandú Orsi' : 'Luis Lacalle Pou';
-      const p2WinsText = p2WinsCount > 0 ? ' ' + '⭐'.repeat(p2WinsCount) : '';
+      const p2Data = getCharacterData(p2.characterType);
+      const p2BaseName = p2Data.name;
+      const p2WinsText = p2WinsCount > 0 ? ' ' + 'â­'.repeat(p2WinsCount) : '';
       const p2NameText = p2BaseName + p2WinsText;
       if (p2NameElem && p2NameElem.textContent !== p2NameText) {
         p2NameElem.textContent = p2NameText;
         const p2PortraitElem = document.querySelector('#hud-p2-portrait img');
         if (p2PortraitElem) {
-          p2PortraitElem.src = p2.characterType === 'orsi' ? '/assets/images/orsi.png' : '/assets/images/lacalle.png';
+          p2PortraitElem.src = p2Data.portrait || '/assets/images/orsi.png';
         }
       }
     }
@@ -394,7 +417,7 @@ class UIManager {
     const p1HealthDamageBar = document.getElementById('hud-p1-health-damage');
     const p1Pct = (p1.health / p1.maxHealth) * 100;
     p1HealthBar.style.width = `${p1Pct}%`;
-    // Retrasar levemente la barra de fondo roja para el efecto daño
+    // Retrasar levemente la barra de fondo roja para el efecto daÃ±o
     setTimeout(() => {
       if (p1HealthDamageBar) p1HealthDamageBar.style.width = `${p1Pct}%`;
     }, 400);
@@ -408,7 +431,7 @@ class UIManager {
     // Combos flotantes J1
     const p1Combo = document.getElementById('hud-p1-combo');
     if (p1.comboCount > 1) {
-      p1Combo.textContent = `¡${p1.comboCount} GOLPES!`;
+      p1Combo.textContent = `Â¡${p1.comboCount} GOLPES!`;
     } else {
       p1Combo.textContent = '';
     }
@@ -448,7 +471,7 @@ class UIManager {
     // Combos flotantes J2
     const p2Combo = document.getElementById('hud-p2-combo');
     if (p2.comboCount > 1) {
-      p2Combo.textContent = `¡${p2.comboCount} GOLPES!`;
+      p2Combo.textContent = `Â¡${p2.comboCount} GOLPES!`;
     } else {
       p2Combo.textContent = '';
     }
@@ -458,7 +481,7 @@ class UIManager {
   triggerFlash() {
     if (!this.flash) return;
     this.flash.classList.remove('flash-active');
-    void this.flash.offsetWidth; // Forzar reflow para reiniciar la animación
+    void this.flash.offsetWidth; // Forzar reflow para reiniciar la animaciÃ³n
     this.flash.classList.add('flash-active');
   }
 
@@ -482,7 +505,7 @@ class UIManager {
       AudioManager.play('ko');
       this.triggerFlash();
       if (window.gameApp) {
-        window.gameApp.triggerCameraShake(0.45); // Sacudida épica al K.O.
+        window.gameApp.triggerCameraShake(0.45); // Sacudida Ã©pica al K.O.
       }
     } else if (text.startsWith('ROUND')) {
       if (window.gameApp) {
@@ -510,7 +533,7 @@ class UIManager {
     AudioManager.play('victory');
   }
 
-  // Lógica del Panel de Opciones
+  // LÃ³gica del Panel de Opciones
   setupOpcionesUI() {
     // 1. Selector de Dificultad
     const diffButtons = document.querySelectorAll('.btn-diff');
@@ -520,7 +543,7 @@ class UIManager {
         e.target.classList.add('active');
         const selectedDiff = e.target.getAttribute('data-diff');
         
-        // Guardar en la configuración local
+        // Guardar en la configuraciÃ³n local
         localStorage.setItem('fightuy_difficulty', selectedDiff);
         AudioManager.play('select');
       });

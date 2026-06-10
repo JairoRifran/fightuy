@@ -177,6 +177,66 @@ const CHARACTER_CONFIGS = {
         hitStop: 0.08
       }
     }
+  },
+  humano: {
+    paths: {
+      idle: '/assets/models/humano/en-guardia.glb',
+      walkFwd: '/assets/models/humano/el-humano-caminando-adelante.glb',
+      walkBwd: '/assets/models/humano/el-humano-gateando.glb',
+      punchCombo: '/assets/models/humano/combo-pinas.glb',
+      elbow: '/assets/models/humano/golpe%20de%20codo.glb',
+      kick: '/assets/models/humano/patada-el-humano.glb',
+      introHumano: '/assets/models/humano/intro-el-humano.glb'
+    },
+    hitReactKey: 'idle',
+    introKeys: ['introHumano', 'walkBwd'],
+    attacks: {
+      punch: {
+        animationKey: 'punchCombo',
+        targetDuration: 0.82,
+        fallbackDuration: 0.82,
+        activeStart: 0.2,
+        activeEnd: 0.72,
+        lungeStart: 0.14,
+        lungeEnd: 0.58,
+        lungeSpeed: 1.35,
+        damage: 13,
+        range: 1.62,
+        height: 1.1,
+        knockback: 3.25,
+        hitStop: 0.06
+      },
+      kick: {
+        animationKey: 'kick',
+        targetDuration: 0.76,
+        fallbackDuration: 0.76,
+        activeStart: 0.28,
+        activeEnd: 0.62,
+        lungeStart: 0.16,
+        lungeEnd: 0.5,
+        lungeSpeed: 1.45,
+        damage: 12,
+        range: 1.85,
+        height: 0.78,
+        knockback: 3.8,
+        hitStop: 0.06
+      },
+      special: {
+        animationKey: 'elbow',
+        targetDuration: 0.78,
+        fallbackDuration: 0.78,
+        activeStart: 0.24,
+        activeEnd: 0.6,
+        lungeStart: 0.12,
+        lungeEnd: 0.56,
+        lungeSpeed: 2.85,
+        damage: 24,
+        range: 2.05,
+        height: 1.25,
+        knockback: 5.0,
+        hitStop: 0.085
+      }
+    }
   }
 };
 
@@ -191,10 +251,13 @@ class Fighter {
       key === 'spartan' ||
       key === 'hitReact' ||
       key === 'punchJumping' ||
+      key === 'punchCombo' ||
+      key === 'elbow' ||
       key === 'introMate' ||
       key === 'introMateAlt' ||
       key === 'introKick' ||
-      key === 'introHandstand';
+      key === 'introHandstand' ||
+      key === 'introHumano';
   }
 
   constructor(characterType, positionX, facingDirection, scene, renderer, onAssetLoaded) {
