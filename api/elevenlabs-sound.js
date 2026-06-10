@@ -9,14 +9,14 @@ const SPEAKER_VOICES = {
 };
 
 const SOUND_PROMPTS = {
-  fight: '¡Fight!',
-  ko: '¡K O!',
-  special_orsi: '¡Yamandú carga el mate especial, bo!',
-  special_lacalle: '¡Luis lanza su ola de La Tahona!',
-  special_humano: '¡El Humano resiste con fuerza!',
-  voice_orsi_hit: '¡Pará la mano, che!',
-  voice_lacalle_hit: '¡Cuidado con la lumbago!',
-  voice_humano_hit: '¡El humano no se rinde!'
+  fight: '¡Guerra total por el Uruguay! ¡Fight!',
+  ko: '¡Fin de la campaña electoral! ¡K O!',
+  special_orsi: '¡Toma mate, bo!',
+  special_lacalle: '¡La Tahona se defiende!',
+  special_humano: '¡Rebelión del Uruguay profundo!',
+  voice_orsi_hit: '¡Agh!',
+  voice_lacalle_hit: '¡Ugh!',
+  voice_humano_hit: '¡Arrg!'
 };
 
 const TYPE_SPEAKERS = {

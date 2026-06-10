@@ -510,8 +510,8 @@ class GameApp {
     const line = this.dialogueLines[this.currentDialogueIndex];
     this.isDialogueTyping = true;
     
-    // Reproducir linea de voz via ElevenLabs / SpeechSynthesis
-    AudioManager.playDialogue(line.text, line.speaker);
+    // Voces largas deshabilitadas en el modo de dialogo por solicitud
+    // AudioManager.playDialogue(line.text, line.speaker);
     
     UIManager.updateStoryDialogue(line, () => {
       this.isDialogueTyping = false;
@@ -684,6 +684,19 @@ class GameApp {
       // Mantener efectos visuales activos
       CollisionSystem.updateParticles();
 
+      // Generar destellos de auras de energia brillantes durante intros
+      if (this.introPhase === 'P1_INTRO' && this.player1) {
+        const p1Color = this.player1.characterType === 'orsi' ? '#ff3d00' : (this.player1.characterType === 'lacalle' ? '#00d2ff' : '#ffca28');
+        if (Math.random() < 0.16) {
+          CollisionSystem.spawnIntroAura(this.player1.position.x, p1Color);
+        }
+      } else if (this.introPhase === 'P2_INTRO' && this.player2) {
+        const p2Color = this.player2.characterType === 'orsi' ? '#ff3d00' : (this.player2.characterType === 'lacalle' ? '#00d2ff' : '#ffca28');
+        if (Math.random() < 0.16) {
+          CollisionSystem.spawnIntroAura(this.player2.position.x, p2Color);
+        }
+      }
+ 
       // LÃ³gica de fases secuenciales de la intro
       if (this.introPhase === 'P1_INTRO') {
         // Transicionar de la primera a la segunda animaciÃ³n de P1 (solapada para fundido suave en movimiento)
@@ -971,39 +984,51 @@ class GameApp {
   // Manejo de la CÃ¡mara CinematogrÃ¡fica de la Intro (Primeros planos y paneo de grÃºa)
   updateIntroCamera(dt) {
     if (!this.player1) return;
-
+ 
     let targetPosX, targetPosY, targetPosZ;
     let targetLookX, targetLookY, targetLookZ;
-
+ 
     if (this.introPhase === 'P1_INTRO') {
       const progress = Math.min(1, this.introTimer / this.p1IntroDuration);
-      // Plano medio-largo proporcional al escenario (cÃ¡mara mÃ¡s alejada para evitar distorsiÃ³n de escala)
-      targetPosX = THREE.MathUtils.lerp(-2.6, -2.2, progress);
-      targetPosY = THREE.MathUtils.lerp(1.2, 1.4, progress);
-      targetPosZ = THREE.MathUtils.lerp(5.0, 4.0, progress);
+      
+      // Movimiento orbital de camara en arco alrededor de P1 (x = -4.0)
+      const startAngle = 0.65; // Diagonal frontal
+      const endAngle = 1.15;   // Mas lateral
+      const angle = THREE.MathUtils.lerp(startAngle, endAngle, progress);
+      const radius = THREE.MathUtils.lerp(4.7, 4.0, progress); // Dolly-in sutil
 
+      targetPosX = -4.0 + Math.cos(angle) * radius;
+      targetPosZ = Math.sin(angle) * radius;
+      targetPosY = THREE.MathUtils.lerp(1.15, 1.45, progress); // Grua ascendente
+ 
       targetLookX = -4.0;
-      targetLookY = 0.9;
+      targetLookY = 0.85;
       targetLookZ = 0.0;
     } else if (this.introPhase === 'P2_INTRO') {
       const progress = Math.min(1, this.introTimer / this.p2IntroDuration);
-      // Espejo de plano medio-largo proporcional para P2
-      targetPosX = THREE.MathUtils.lerp(2.6, 2.2, progress);
-      targetPosY = THREE.MathUtils.lerp(1.2, 1.4, progress);
-      targetPosZ = THREE.MathUtils.lerp(5.0, 4.0, progress);
+      
+      // Movimiento orbital simetrico alrededor de P2 (x = 4.0)
+      const startAngle = Math.PI - 0.65;
+      const endAngle = Math.PI - 1.15;
+      const angle = THREE.MathUtils.lerp(startAngle, endAngle, progress);
+      const radius = THREE.MathUtils.lerp(4.7, 4.0, progress);
 
+      targetPosX = 4.0 + Math.cos(angle) * radius;
+      targetPosZ = Math.sin(angle) * radius;
+      targetPosY = THREE.MathUtils.lerp(1.15, 1.45, progress);
+ 
       targetLookX = 4.0;
-      targetLookY = 0.9;
+      targetLookY = 0.85;
       targetLookZ = 0.0;
     } else {
       // INTRO_OUTRO: InterpolaciÃ³n fluida hacia la vista de combate estÃ¡ndar
       const progress = Math.min(1, this.introTimer / 0.8);
       const standard = this.getStandardCameraTarget();
-
+ 
       targetPosX = THREE.MathUtils.lerp(this.transitionStartPos.x, standard.posX, progress);
       targetPosY = THREE.MathUtils.lerp(this.transitionStartPos.y, standard.posY, progress);
       targetPosZ = THREE.MathUtils.lerp(this.transitionStartPos.z, standard.posZ, progress);
-
+ 
       targetLookX = THREE.MathUtils.lerp(this.transitionStartLook.x, standard.lookX, progress);
       targetLookY = THREE.MathUtils.lerp(this.transitionStartLook.y, standard.lookY, progress);
       targetLookZ = THREE.MathUtils.lerp(this.transitionStartLook.z, standard.lookZ, progress);

@@ -234,6 +234,45 @@ class CollisionSystem {
     });
   }
 
+  // Generador de destellos de aura de energia ascendente para intros
+  spawnIntroAura(x, color) {
+    const material = new THREE.MeshBasicMaterial({
+      color: new THREE.Color(color),
+      transparent: true,
+      opacity: 0.75,
+      blending: THREE.AdditiveBlending
+    });
+
+    const size = 0.035 + Math.random() * 0.045;
+    const geometry = new THREE.SphereGeometry(size, 4, 4);
+    const mesh = new THREE.Mesh(geometry, material);
+
+    // Posicionar en forma de cilindro alrededor de los pies del personaje
+    const angle = Math.random() * Math.PI * 2;
+    const radius = 0.15 + Math.random() * 0.55;
+    const px = x + Math.cos(angle) * radius;
+    const pz = (Math.random() - 0.5) * 0.8;
+    const py = 0.0; // Desde el suelo
+
+    mesh.position.set(px, py, pz);
+    this.particleGroup.add(mesh);
+
+    // Velocidad de ascenso y leve deriva horizontal
+    const velocity = new THREE.Vector3(
+      (Math.random() - 0.5) * 0.3,
+      1.1 + Math.random() * 1.4, // Ascenso suave
+      (Math.random() - 0.5) * 0.3
+    );
+
+    this.particles.push({
+      mesh: mesh,
+      velocity: velocity,
+      life: 1.0,
+      decay: 0.8 + Math.random() * 0.8, // Vida de 0.6s a 1.2s
+      isAura: true
+    });
+  }
+
   // Actualiza y anima las partículas activas
   updateParticles() {
     const deltaTime = 1 / 60; // Asumimos pasos de 60fps aproximados
@@ -267,6 +306,13 @@ class CollisionSystem {
 
           // LERP de color: De blanco encandescente a color base/brasa
           p.mesh.material.color.lerpColors(p.endColor, p.startColor, p.life);
+        } else if (p.isAura) {
+          // Ascenso suave sin gravedad
+          p.mesh.position.addScaledVector(p.velocity, deltaTime);
+          
+          // Desvanecimiento gradual
+          p.mesh.material.opacity = p.life * 0.65;
+          p.mesh.scale.setScalar(p.life);
         }
       }
     }

@@ -70,6 +70,9 @@ class AudioManager {
     gainNode.connect(this.ctx.destination);
     source.start(0);
     this.isUnlocked = true;
+
+    // Arrancar la musica del menu automaticamente al primer click interactivo
+    this.startBGM('menu');
   }
 
   setVolume(vol) {
@@ -393,57 +396,100 @@ class AudioManager {
     return source;
   }
 
-  // Inicia la musica sintetizada de combate estilo Synthwave
+  // Inicia la musica sintetizada de combate o menu estilo Synthwave
   startBGM(themeType = 'combat') {
     this.initContext();
-    if (this.bgmInterval) return; // Ya esta sonando
+    
+    // Si ya esta reproduciendo este mismo tema, no hacer nada para evitar reinicios bruscos
+    if (this.bgmInterval) {
+      if (this.currentBGMType === themeType) return;
+      this.stopBGM(); // Si es un tema diferente, detener el anterior primero
+    }
 
-    let tempo = 120; // BPM
+    this.currentBGMType = themeType;
+    this.bgmActive = true;
+
+    let tempo = themeType === 'combat' ? 120 : 96; // 120 BPM para pelea, 96 BPM para menu
     let stepTime = 60 / tempo / 2; // Corcheas (1/8 notes)
     let step = 0;
 
     // Lineas de bajo rítmico (Notas en Hz)
-    // Yamandu y combate standard: A1 (55Hz), C2 (65.4Hz), D2 (73.4Hz), E2 (82.4Hz)
-    const bassline = [
+    const combatBass = [
       55, 55, 65.4, 73.4, 55, 55, 73.4, 82.4,
       55, 55, 65.4, 73.4, 82.4, 82.4, 73.4, 65.4
     ];
+    
+    const menuBass = [
+      58.27, 58.27, 58.27, 58.27, 65.4, 65.4, 65.4, 65.4,
+      73.4, 73.4, 73.4, 73.4, 87.3, 87.3, 87.3, 87.3
+    ]; // A#1, C2, D2, F2 en Hz
 
-    this.bgmActive = true;
+    const bassline = themeType === 'combat' ? combatBass : menuBass;
 
     const playSynthStep = () => {
       if (!this.bgmActive || !this.ctx) return;
 
       const now = this.ctx.currentTime;
 
-      // 1. Sintetizador de Bajo (sawtooth + sub sine) en cada negra (steps pares)
-      if (step % 2 === 0) {
-        const noteIdx = Math.floor(step / 2) % bassline.length;
-        const freq = bassline[noteIdx];
+      if (themeType === 'combat') {
+        // --- Ritmo energetico de pelea ---
+        // 1. Sintetizador de Bajo (sawtooth + sub sine) en cada negra (steps pares)
+        if (step % 2 === 0) {
+          const noteIdx = Math.floor(step / 2) % bassline.length;
+          const freq = bassline[noteIdx];
+          
+          this.playTone(freq, freq * 0.99, stepTime * 1.6, 0.12, 'sawtooth', now);
+          this.playTone(freq / 2, freq / 2, stepTime * 1.4, 0.2, 'sine', now);
+        }
+
+        // 2. Hi-Hat Retro (ruido blanco rapido en off-beats)
+        if (step % 2 === 1) {
+          this.playNoiseBurst(0.04, 0.04, 3800, 'highpass', now);
+        }
+
+        // 3. Bombo Analogico (Kick) en pulsos 0, 4, 6 de un patron de 8 corcheas
+        const beat = step % 8;
+        if (beat === 0 || beat === 4 || beat === 6) {
+          this.playTone(130, 48, 0.14, 0.28, 'sine', now);
+          this.playTone(190, 60, 0.035, 0.15, 'triangle', now); // Golpe de mazo
+        }
+
+        // 4. Caja Retro (Snare) en pasos 4 del patron
+        if (beat === 4) {
+          this.playNoiseBurst(0.12, 0.12, 1100, 'bandpass', now);
+          this.playTone(180, 90, 0.09, 0.08, 'triangle', now);
+        }
+      } else {
+        // --- Ritmo chill arpegiado caracteristico para menu y navegacion ---
+        // 1. Bajo sine ultra-suave sostenido en el paso 0 de cada compas de 8 steps
+        if (step % 8 === 0) {
+          const noteIdx = Math.floor(step / 8) % bassline.length;
+          const freq = bassline[noteIdx];
+          
+          this.playTone(freq, freq, stepTime * 7.5, 0.22, 'sine', now); // Bajo redondo
+          this.playTone(freq * 2, freq * 2, stepTime * 5.0, 0.08, 'triangle', now); // Calidez media
+        }
+
+        // 2. Arpegiador melodico caracteristico (Pluck synth)
+        const chordNotes = step % 16;
+        let melodyFreq = 0;
+        const root = bassline[Math.floor(step / 8) % bassline.length] * 4; // Subir 2 octavas
         
-        // Bajo principal tipo synthwave
-        this.playTone(freq, freq * 0.99, stepTime * 1.6, 0.12, 'sawtooth', now);
-        // Sub-bajo redondo
-        this.playTone(freq / 2, freq / 2, stepTime * 1.4, 0.2, 'sine', now);
-      }
+        if (chordNotes === 0) melodyFreq = root;
+        else if (chordNotes === 2) melodyFreq = root * 1.2;  // Tercera menor
+        else if (chordNotes === 4) melodyFreq = root * 1.5;  // Quinta
+        else if (chordNotes === 6) melodyFreq = root * 1.8;  // Septima/Octava
+        else if (chordNotes === 8) melodyFreq = root * 1.5;
+        else if (chordNotes === 10) melodyFreq = root * 1.2;
 
-      // 2. Hi-Hat Retro (ruido blanco rapido en off-beats)
-      if (step % 2 === 1) {
-        this.playNoiseBurst(0.04, 0.04, 3800, 'highpass', now);
-      }
+        if (melodyFreq > 0) {
+          this.playTone(melodyFreq, melodyFreq * 0.98, 0.32, 0.07, 'sine', now);
+        }
 
-      // 3. Bombo Analogico (Kick) en pulsos 0, 4, 6 de un patron de 8 corcheas
-      const beat = step % 8;
-      if (beat === 0 || beat === 4 || beat === 6) {
-        // Impacto de bombo sintetizado (barrido de frecuencia rapido hacia abajo)
-        this.playTone(130, 48, 0.14, 0.28, 'sine', now);
-        this.playTone(190, 60, 0.035, 0.15, 'triangle', now); // Golpe de mazo
-      }
-
-      // 4. Caja Retro (Snare) en pasos 4 del patron (combina ruido de frecuencia media y tono)
-      if (beat === 4) {
-        this.playNoiseBurst(0.12, 0.12, 1100, 'bandpass', now);
-        this.playTone(180, 90, 0.09, 0.08, 'triangle', now);
+        // 3. Hi-Hat sutil e intermitente para marcar el paso
+        if (step % 4 === 2) {
+          this.playNoiseBurst(0.025, 0.016, 4200, 'highpass', now);
+        }
       }
 
       step++;
