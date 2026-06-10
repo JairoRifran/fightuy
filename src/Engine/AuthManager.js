@@ -1,8 +1,13 @@
 import { createClient } from '@supabase/supabase-js';
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || import.meta.env.NEXT_PUBLIC_SUPABASE_URL;
+const SUPABASE_ANON_KEY =
+  import.meta.env.VITE_SUPABASE_ANON_KEY ||
+  import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
+  import.meta.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+  import.meta.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
 const FREE_CHARACTERS = new Set(['orsi', 'lacalle', 'humano']);
+const SUPABASE_CONFIG_ERROR = 'Faltan las variables publicas de Supabase en Vercel. Agrega VITE_SUPABASE_URL y VITE_SUPABASE_ANON_KEY, o las NEXT_PUBLIC_SUPABASE_* de la integracion.';
 
 class AuthManager {
   constructor() {
@@ -19,7 +24,7 @@ class AuthManager {
   async init() {
     if (!this.enabled) {
       if (!this.allowLocalMode) {
-        throw new Error('Faltan las variables publicas de Supabase en Vercel. Agrega VITE_SUPABASE_URL y VITE_SUPABASE_ANON_KEY para habilitar usuarios reales.');
+        throw new Error(SUPABASE_CONFIG_ERROR);
       }
       const savedUser = localStorage.getItem('fightuy_local_user');
       this.localUser = savedUser ? JSON.parse(savedUser) : null;
@@ -62,6 +67,12 @@ class AuthManager {
     return this.profile?.role === 'owner';
   }
 
+  requireSupabase() {
+    if (!this.enabled || !this.supabase) {
+      throw new Error(SUPABASE_CONFIG_ERROR);
+    }
+  }
+
   async signUp({ email, password, username }) {
     if (this.allowLocalMode) {
       this.localUser = {
@@ -72,6 +83,8 @@ class AuthManager {
       localStorage.setItem('fightuy_local_user', JSON.stringify(this.localUser));
       return this.localUser;
     }
+
+    this.requireSupabase();
 
     const { data, error } = await this.supabase.auth.signUp({
       email,
@@ -106,6 +119,8 @@ class AuthManager {
       return this.localUser;
     }
 
+    this.requireSupabase();
+
     const { data, error } = await this.supabase.auth.signInWithPassword({ email, password });
     if (error) throw error;
 
@@ -121,6 +136,8 @@ class AuthManager {
       return;
     }
 
+    this.requireSupabase();
+
     const { error } = await this.supabase.auth.signOut();
     if (error) throw error;
     this.session = null;
@@ -129,6 +146,7 @@ class AuthManager {
   }
 
   async ensureProfile(user, fallbackUsername) {
+    this.requireSupabase();
     const username = user.user_metadata?.username || fallbackUsername || user.email?.split('@')[0] || 'jugador';
 
     await this.supabase
@@ -187,6 +205,7 @@ class AuthManager {
       };
     }
 
+    this.requireSupabase();
     if (!this.isOwner()) throw new Error('No tenés permisos de dueño para ver este panel.');
 
     const { data, error } = await this.supabase.rpc('get_owner_dashboard');
@@ -211,6 +230,7 @@ class AuthManager {
       };
     }
 
+    this.requireSupabase();
     if (!this.session?.user) throw new Error('Tenés que iniciar sesión.');
 
     const userId = this.session.user.id;
