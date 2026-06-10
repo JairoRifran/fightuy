@@ -341,8 +341,14 @@ class UIManager {
     const speakerName = document.getElementById('dialogue-speaker-name');
     const speakerLeft = document.getElementById('story-speaker-left');
     const speakerRight = document.getElementById('story-speaker-right');
+    const activeCharacter = getCharacterData(dialogueLine.speaker);
+    const activePortrait = dialogueLine.portrait === 'left' ? speakerLeft : speakerRight;
+    const activePortraitImg = activePortrait?.querySelector('img');
+    const activeNameTag = activePortrait?.querySelector('.story-name-tag');
 
     speakerName.textContent = dialogueLine.name;
+    if (activePortraitImg) activePortraitImg.src = activeCharacter.portrait || '/assets/images/orsi.png';
+    if (activeNameTag) activeNameTag.textContent = activeCharacter.shortName || activeCharacter.name;
 
     // Actualizar quiÃ©n habla (Iluminar retrato y apagar el otro)
     if (dialogueLine.portrait === 'left') {

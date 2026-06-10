@@ -182,14 +182,14 @@ const CHARACTER_CONFIGS = {
     paths: {
       idle: '/assets/models/humano/en-guardia.glb',
       walkFwd: '/assets/models/humano/el-humano-caminando-adelante.glb',
-      walkBwd: '/assets/models/humano/el-humano-gateando.glb',
+      crawlIntro: '/assets/models/humano/el-humano-gateando.glb',
       punchCombo: '/assets/models/humano/combo-pinas.glb',
       elbow: '/assets/models/humano/golpe%20de%20codo.glb',
       kick: '/assets/models/humano/patada-el-humano.glb',
       introHumano: '/assets/models/humano/intro-el-humano.glb'
     },
     hitReactKey: 'idle',
-    introKeys: ['introHumano', 'walkBwd'],
+    introKeys: ['introHumano', 'crawlIntro'],
     attacks: {
       punch: {
         animationKey: 'punchCombo',
@@ -257,7 +257,8 @@ class Fighter {
       key === 'introMateAlt' ||
       key === 'introKick' ||
       key === 'introHandstand' ||
-      key === 'introHumano';
+      key === 'introHumano' ||
+      key === 'crawlIntro';
   }
 
   constructor(characterType, positionX, facingDirection, scene, renderer, onAssetLoaded) {

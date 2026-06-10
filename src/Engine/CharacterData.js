@@ -26,7 +26,7 @@ const CharacterData = {
     name: 'El Humano',
     shortName: 'Humano',
     banner: 'UY',
-    portrait: null,
+    portrait: '/assets/images/humano.png',
     specialName: 'HUMANO SPECIAL',
     slogan: '"Sigan viendo, que el humano todavía no terminó"',
     description: 'Fenómeno viral del Uruguay profundo de internet: reclamo callejero, energía inclasificable y una guardia que parece inventada en vivo. En FightUY entra como leyenda bizarra, impredecible y extrañamente resistente.',

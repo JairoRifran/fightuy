@@ -456,10 +456,48 @@ class GameApp {
   startStoryMode() {
     this.gameState = 'STORY';
     this.currentDialogueIndex = 0;
-    this.dialogueLines = StoryDialogs[this.activeStage] || StoryDialogs.rambla;
+    this.dialogueLines = this.getStoryDialogues();
 
     UIManager.showScreen('story');
     this.showNextDialogueLine();
+  }
+
+  getStoryDialogues() {
+    const playerChar = this.player1?.characterType || UIManager.selectedChar;
+    const opponentChar = this.player2?.characterType || UIManager.selectedOpponent;
+
+    if (playerChar === 'humano' || opponentChar === 'humano') {
+      const playerName = getCharacterData(playerChar).name;
+      const opponentName = getCharacterData(opponentChar).name;
+      const humanoIsPlayer = playerChar === 'humano';
+
+      return [
+        {
+          speaker: playerChar,
+          name: playerName,
+          portrait: 'left',
+          text: humanoIsPlayer
+            ? 'Yo soy El Humano. No vine a explicar nada, vine a que Uruguay mire.'
+            : `${playerName} mira raro al rival. Hay algo en esa entrada que no encaja con ninguna campaña.`
+        },
+        {
+          speaker: opponentChar,
+          name: opponentName,
+          portrait: 'right',
+          text: humanoIsPlayer
+            ? `${opponentName} intenta mantener la guardia, pero el gateo de entrada rompió todo el protocolo.`
+            : 'El Humano aparece gateando como si el escenario fuera suyo. Nadie sabe si es amenaza, protesta o performance.'
+        },
+        {
+          speaker: 'humano',
+          name: 'El Humano',
+          portrait: humanoIsPlayer ? 'left' : 'right',
+          text: 'La política pidió orden. El Humano trajo otra cosa.'
+        }
+      ];
+    }
+
+    return StoryDialogs[this.activeStage] || StoryDialogs.rambla;
   }
 
   showNextDialogueLine() {
