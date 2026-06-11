@@ -7,6 +7,7 @@ const SUPABASE_ANON_KEY =
   import.meta.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
   import.meta.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
 const FREE_CHARACTERS = new Set(['orsi', 'lacalle', 'humano']);
+const OWNER_EMAILS = new Set(['rifranjairo@gmail.com']);
 const SUPABASE_CONFIG_ERROR = 'Faltan las variables publicas de Supabase en Vercel. Agrega VITE_SUPABASE_URL y VITE_SUPABASE_ANON_KEY, o las NEXT_PUBLIC_SUPABASE_* de la integracion.';
 
 class AuthManager {
@@ -64,7 +65,8 @@ class AuthManager {
 
   isOwner() {
     if (this.allowLocalMode) return true;
-    return this.profile?.role === 'owner';
+    const email = (this.profile?.email || this.session?.user?.email || '').toLowerCase();
+    return this.profile?.role === 'owner' || OWNER_EMAILS.has(email);
   }
 
   requireSupabase() {
@@ -208,11 +210,36 @@ class AuthManager {
     this.requireSupabase();
     if (!this.isOwner()) throw new Error('No tenés permisos de dueño para ver este panel.');
 
+    const apiDashboard = await this.getOwnerDashboardFromApi();
+    if (apiDashboard) {
+      this.ownerDashboard = apiDashboard;
+      return apiDashboard;
+    }
+
     const { data, error } = await this.supabase.rpc('get_owner_dashboard');
     if (error) throw error;
 
     this.ownerDashboard = data;
     return data;
+  }
+
+  async getOwnerDashboardFromApi() {
+    const token = this.session?.access_token;
+    if (!token) return null;
+
+    const response = await fetch('/api/owner-dashboard', {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+
+    if (response.status === 404) return null;
+    if (!response.ok) {
+      const body = await response.json().catch(() => ({}));
+      throw new Error(body.error || 'No se pudo cargar el dashboard del producto.');
+    }
+
+    return response.json();
   }
 
   async getPlayerProfile() {
